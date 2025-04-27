@@ -1,0 +1,20 @@
+[project]
+name = "uplang"
+version = "0.1.0"
+description = "更新整合包语言文件的实用 Python 库。"
+authors = [
+    {name = "QianFuv",email = "qianfuv@qq.com"}
+]
+readme = "README.md"
+requires-python = "3.11.9"
+dependencies = [
+    "orjson (==3.10.16)"
+]
+
+[tool.poetry]
+packages = [{include = "uplang", from = "src"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
