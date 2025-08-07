@@ -7,7 +7,9 @@ authors = [
     { name = "QianFuv", email = "qianfuv@qq.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "clink>=0.35.0",
+]
 
 [project.scripts]
 uplang = "uplang:main"
