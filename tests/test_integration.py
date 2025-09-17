@@ -25,13 +25,16 @@ def setup_test_environment():
 def run_uplang_command(command_args):
     """Runs an uplang command and asserts its success."""
     print(f"\n--- Running command: uplang {command_args} ---")
-    full_command = ["uplang"] + command_args.split()
+    full_command = ["python", "-m", "uplang.cli"] + command_args.split()
+    env = os.environ.copy()
+    env['PYTHONPATH'] = '/mnt/d/QianFuv/UpLang/src'
     result = subprocess.run(
         full_command,
         capture_output=True,
         text=True,
         encoding='utf-8',
-        check=False # Do not raise exception for non-zero exit code here
+        check=False,
+        env=env
     )
     print(result.stdout)
     if result.stderr:
