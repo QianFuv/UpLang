@@ -5,6 +5,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  id-token: write
+
 jobs:
   build-and-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
