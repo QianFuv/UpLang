@@ -3,6 +3,7 @@ Language file synchronization functionality
 """
 
 import json
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Any
 
@@ -34,11 +35,11 @@ class LanguageSynchronizer:
                 stats.files_skipped += 1
                 return stats
 
-            zh_data = {}
+            zh_data = OrderedDict()
             if zh_cn_path.exists():
                 loaded_data = read_json_robust(zh_cn_path, self.logger)
                 if isinstance(loaded_data, dict):
-                    zh_data = loaded_data
+                    zh_data = OrderedDict(loaded_data)
                 else:
                     self.logger.warning(f"Invalid Chinese file format: {zh_cn_path}")
 
@@ -46,13 +47,24 @@ class LanguageSynchronizer:
             keys_to_remove = {key for key in zh_data if key not in en_data}
 
             if keys_to_add or keys_to_remove:
-                for key, value in keys_to_add.items():
-                    zh_data[key] = value
-                    stats.keys_added += 1
+                # Create a new OrderedDict to maintain the order from en_data first
+                new_zh_data = OrderedDict()
 
+                # First, add all keys from en_data in their original order
+                for key, value in en_data.items():
+                    if key in zh_data:
+                        # Keep existing translation
+                        new_zh_data[key] = zh_data[key]
+                    else:
+                        # Add new key with English value
+                        new_zh_data[key] = value
+                        stats.keys_added += 1
+
+                # Count removed keys
                 for key in keys_to_remove:
-                    del zh_data[key]
                     stats.keys_removed += 1
+
+                zh_data = new_zh_data
 
                 write_json_safe(zh_cn_path, zh_data, self.logger)
                 self.logger.debug(f"Synchronized {zh_cn_path}: +{stats.keys_added} -{stats.keys_removed}")

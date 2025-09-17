@@ -4,6 +4,7 @@ JSON handling utilities with robust error handling
 
 import json
 import re
+from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -59,9 +60,9 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
 
         # Try to parse JSON with multiple strategies
         parse_strategies = [
-            ("direct", lambda x: json.loads(x)),
-            ("fixed", lambda x: json.loads(fix_common_json_issues(x))),
-            ("aggressive_fix", lambda x: json.loads(aggressive_json_fix(x))),
+            ("direct", lambda x: json.loads(x, object_pairs_hook=OrderedDict)),
+            ("fixed", lambda x: json.loads(fix_common_json_issues(x), object_pairs_hook=OrderedDict)),
+            ("aggressive_fix", lambda x: json.loads(aggressive_json_fix(x), object_pairs_hook=OrderedDict)),
             ("extract_dict", lambda x: extract_dict_from_malformed_json(x))
         ]
 
@@ -204,11 +205,11 @@ def aggressive_json_fix(json_str: str) -> str:
     return '\n'.join(fixed_lines)
 
 
-def extract_dict_from_malformed_json(json_str: str) -> Dict[str, str]:
+def extract_dict_from_malformed_json(json_str: str) -> OrderedDict:
     """
     Last resort: try to extract key-value pairs from severely malformed JSON
     """
-    result = {}
+    result = OrderedDict()
 
     # Look for patterns that look like key-value pairs
     # Pattern: anything that looks like "key": "value" or key: value
@@ -247,7 +248,8 @@ def write_json_safe(file_path: Path, data: Dict[str, Any], logger=None):
         cleaned_data = clean_data_surrogates(data)
 
         # Write with UTF-8 encoding, replacing any problematic characters
-        json_str = json.dumps(cleaned_data, ensure_ascii=False, indent=4)
+        # Use sort_keys=False to preserve the original key order
+        json_str = json.dumps(cleaned_data, ensure_ascii=False, indent=4, sort_keys=False)
 
         # Remove any remaining surrogate characters from the JSON string
         json_str = clean_surrogate_chars(json_str)
