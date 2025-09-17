@@ -1,6 +1,6 @@
 [project]
 name = "uplang"
-version = "0.2.0"
+version = "0.2.1"
 description = "A command-line tool to streamline the process of updating language files for Minecraft Java Edition modpacks."
 readme = "README.md"
 authors = [
@@ -8,16 +8,6 @@ authors = [
 ]
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Software Development :: Build Tools",
-    "Topic :: Text Processing",
-    "Topic :: Utilities",
-]
 dependencies = [
     "click>=8.1.7",
     "rich>=13.7.0",
@@ -33,7 +23,6 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/QianFuv/UpLang"
 Repository = "https://github.com/QianFuv/UpLang"
 
 [build-system]
