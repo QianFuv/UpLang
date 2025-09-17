@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Dict
 
 @dataclass
 class Mod:
@@ -8,3 +8,5 @@ class Mod:
     version: str
     file_path: str
     file_hash: Optional[str] = None
+    has_lang_files: bool = False
+    lang_files: Dict[str, str] = field(default_factory=dict)

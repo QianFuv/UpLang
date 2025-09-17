@@ -15,6 +15,9 @@ UPLANG_VERSION = "0.1.0"
 def save_state(mods_list: List[Mod], file_path: str, mods_dir: str, resource_pack_dir: str):
     """Saves the list of mods and other state information to a JSON file."""
     try:
+        # Sort mods by mod_id before saving
+        sorted_mods = sorted(mods_list, key=lambda m: m.mod_id)
+
         state_data = {
             "metadata": {
                 "timestamp": datetime.now().isoformat(),
@@ -25,9 +28,9 @@ def save_state(mods_list: List[Mod], file_path: str, mods_dir: str, resource_pac
             "project_info": {
                 "mods_directory": mods_dir,
                 "resource_pack_directory": resource_pack_dir,
-                "mod_count": len(mods_list)
+                "mod_count": len(sorted_mods)
             },
-            "mods": [mod.__dict__ for mod in mods_list]
+            "mods": [mod.__dict__ for mod in sorted_mods]
         }
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(state_data, f, indent=4)

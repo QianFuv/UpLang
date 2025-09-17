@@ -11,54 +11,93 @@ def cli():
 @click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, resolve_path=True))
 @click.argument("resource_pack_dir", type=click.Path(file_okay=False, resolve_path=True))
 def init(mods_dir, resource_pack_dir):
-    """Initializes the resource pack for the first time."""
+    """Initializes or synchronizes the resource pack with the mods directory."""
     mods_dir = os.path.normpath(mods_dir)
     resource_pack_dir = os.path.normpath(resource_pack_dir)
-    print("Initializing resource pack...")
-    if not os.path.isdir(resource_pack_dir):
-        os.makedirs(resource_pack_dir)
+    print("Synchronizing resource pack...")
 
-    mods = scanner.scan_mods(mods_dir)
-    if not mods:
-        print("No mods found to initialize.")
-        return
+    # 1. Scan for current mods
+    current_mods = scanner.scan_mods(mods_dir)
+    current_mod_ids = {mod.mod_id for mod in current_mods}
+    print(f"Found {len(current_mods)} mods in the mods directory.")
 
-    for mod in mods:
+    # 2. Scan resource pack for existing assets
+    assets_dir = os.path.join(resource_pack_dir, "assets")
+    rp_mod_ids = set()
+    if os.path.isdir(assets_dir):
+        for mod_id in os.listdir(assets_dir):
+            if os.path.isdir(os.path.join(assets_dir, mod_id, "lang")):
+                rp_mod_ids.add(mod_id)
+
+    # 3. Identify and remove deleted mods' assets
+    deleted_mod_ids = rp_mod_ids - current_mod_ids
+    if deleted_mod_ids:
+        print(f"Found {len(deleted_mod_ids)} mods to remove from resource pack...")
+        for mod_id in deleted_mod_ids:
+            mod_asset_dir = os.path.join(assets_dir, mod_id)
+            try:
+                import shutil
+                shutil.rmtree(mod_asset_dir)
+                print(f"  - Removed assets for deleted mod: {mod_id}")
+            except OSError as e:
+                print(f"Error removing directory {mod_asset_dir}: {e}")
+
+    # 4. Process all current mods
+    print(f"Processing {len(current_mods)} current mods...")
+    for mod in current_mods:
+        print(f"Processing mod: {mod.mod_id}")
+        target_dir = os.path.join(assets_dir, mod.mod_id, "lang")
+        os.makedirs(target_dir, exist_ok=True)
+
+        # Clean up other language files
+        for filename in os.listdir(target_dir):
+            if filename.endswith(".json") and filename not in ["en_us.json", "zh_cn.json"]:
+                try:
+                    os.remove(os.path.join(target_dir, filename))
+                    print(f"  - Removed stale language file: {filename} for mod {mod.mod_id}")
+                except OSError as e:
+                    print(f"Error removing file {filename}: {e}")
+
+        rp_en_us_path = os.path.join(target_dir, "en_us.json")
+        rp_zh_cn_path = os.path.join(target_dir, "zh_cn.json")
+
+        # Handle en_us.json (always overwrite)
         en_us_extracted = extractor.extract_lang_file(mod, "en_us")
         if en_us_extracted:
-            _, en_us_content = en_us_extracted
-            target_dir = os.path.join(resource_pack_dir, "assets", mod.mod_id, "lang")
-            os.makedirs(target_dir, exist_ok=True)
-            
-            rp_en_us_path = os.path.join(target_dir, "en_us.json")
-            rp_zh_cn_path = os.path.join(target_dir, "zh_cn.json")
-
-            # Write en_us.json to resource pack
+            en_us_path_in_jar, en_us_content = en_us_extracted
+            mod.has_lang_files = True
+            mod.lang_files["en_us"] = en_us_path_in_jar
             with open(rp_en_us_path, 'wb') as f:
                 f.write(en_us_content)
+            print(f"  - Updated en_us.json for {mod.mod_id}")
+        else:
+            # If en_us does not exist in JAR, we can't proceed with this mod
+            print(f"  - Warning: No en_us.json found for {mod.mod_id}. Skipping.")
+            continue
 
-            # Attempt to extract zh_cn.json from mod JAR
+        # Handle zh_cn.json
+        if not os.path.exists(rp_zh_cn_path):
+            print(f"  - zh_cn.json not found in resource pack for {mod.mod_id}. Creating new one.")
             zh_cn_extracted = extractor.extract_lang_file(mod, "zh_cn")
             if zh_cn_extracted:
-                _, zh_cn_content = zh_cn_extracted
-                # Write zh_cn.json from mod JAR to resource pack
+                zh_cn_path_in_jar, zh_cn_content = zh_cn_extracted
+                mod.lang_files["zh_cn"] = zh_cn_path_in_jar
                 with open(rp_zh_cn_path, 'wb') as f:
                     f.write(zh_cn_content)
-                print(f"  - Copied existing zh_cn.json for {mod.mod_id}")
+                print(f"  - Copied existing zh_cn.json from JAR for {mod.mod_id}")
             else:
-                # If no zh_cn.json in mod JAR, copy en_us.json to zh_cn.json
                 with open(rp_zh_cn_path, 'wb') as f:
                     f.write(en_us_content)
                 print(f"  - Created zh_cn.json from en_us.json for {mod.mod_id}")
-            
-            # Perform synchronization (completion)
-            synchronizer.synchronize_language_file(rp_zh_cn_path, rp_en_us_path)
-            
-            print(f"Initialized {mod.mod_id}")
 
+        # Always synchronize zh_cn.json with en_us.json
+        synchronizer.synchronize_language_file(rp_zh_cn_path, rp_en_us_path)
+        print(f"  - Synchronized zh_cn.json for {mod.mod_id}")
+
+    # 5. Save state
     state_file = os.path.join(resource_pack_dir, ".uplang_state.json")
-    state.save_state(mods, state_file, mods_dir, resource_pack_dir) # Added mods_dir, resource_pack_dir
-    print("\nInitialization complete.")
+    state.save_state(current_mods, state_file, mods_dir, resource_pack_dir)
+    print("\nSynchronization complete.")
 
 @cli.command()
 @click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, resolve_path=True))
@@ -105,7 +144,10 @@ def check(mods_dir, resource_pack_dir):
         for mod in new_mod_objs:
             extracted_file = extractor.extract_lang_file(mod, "en_us")
             if extracted_file:
-                _, content = extracted_file
+                en_us_path_in_jar, content = extracted_file
+                mod.has_lang_files = True
+                mod.lang_files["en_us"] = en_us_path_in_jar
+
                 target_dir = os.path.join(resource_pack_dir, "assets", mod.mod_id, "lang")
                 os.makedirs(target_dir, exist_ok=True)
                 with open(os.path.join(target_dir, "en_us.json"), 'wb') as f:

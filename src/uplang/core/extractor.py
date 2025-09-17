@@ -17,7 +17,7 @@ def extract_lang_file(mod: Mod, lang_code: str = "en_us") -> Optional[Tuple[str,
             for path in possible_paths:
                 if path in jar_file.namelist():
                     with jar_file.open(path) as lang_file:
-                        return (os.path.basename(path), lang_file.read())
+                        return (path, lang_file.read())
     except Exception as e:
         print(f"Error extracting language file from {mod.file_path}: {e}")
     
