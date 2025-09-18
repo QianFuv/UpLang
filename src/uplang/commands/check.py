@@ -5,8 +5,6 @@ This module implements the check command that compares current mods
 with previous state and updates language files accordingly.
 """
 
-from pathlib import Path
-
 from uplang.commands.base import BaseCommand, CommandResult
 from uplang.exceptions import UpLangError, StateError, handle_errors
 from uplang.json_utils import TempJsonProcessor

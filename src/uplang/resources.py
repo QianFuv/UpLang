@@ -5,7 +5,7 @@ Resource management utilities with context managers
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator
 
 from uplang.exceptions import FileSystemError, handle_errors
 from uplang.models import Mod

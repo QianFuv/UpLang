@@ -3,7 +3,6 @@ Service container for dependency injection
 """
 
 from typing import Dict, Any, TypeVar, Type, Optional
-from pathlib import Path
 
 from uplang.config import ProjectConfig
 from uplang.logger import UpLangLogger

@@ -10,9 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from uplang.config import ProjectConfig
-from uplang.logger import UpLangLogger
 from uplang.container import ServiceContainer
-from uplang.exceptions import handle_errors, ConfigurationError
 
 
 @dataclass

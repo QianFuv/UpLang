@@ -5,14 +5,12 @@ This module provides functionality to synchronize Chinese and English
 language files, maintaining translation integrity and key ordering.
 """
 
-import json
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict
 
 from rich.progress import Progress, BarColumn, TextColumn, TaskProgressColumn
 
-from uplang.exceptions import SynchronizationError
 from uplang.logger import UpLangLogger
 from uplang.models import SyncStats
 from uplang.json_utils import read_json_robust, write_json_safe

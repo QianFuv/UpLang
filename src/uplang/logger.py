@@ -6,7 +6,6 @@ color support, progress tracking, and structured output formatting.
 """
 
 import logging
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
