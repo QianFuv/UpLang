@@ -11,16 +11,6 @@ Thank you for your interest in contributing to **UpLang**! We welcome all types 
 5. **Test thoroughly**
 6. **Submit a pull request**
 
-## 📋 Table of Contents
-
-- [Code of Conduct](#code-of-conduct)
-- [How to Contribute](#how-to-contribute)
-- [Development Setup](#development-setup)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
-- [Submitting Changes](#submitting-changes)
-- [Getting Help](#getting-help)
-
 ## 🤝 Code of Conduct
 
 This project follows a simple code of conduct:
