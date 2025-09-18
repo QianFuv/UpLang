@@ -4,9 +4,12 @@ JSON handling utilities with robust error handling
 
 import json
 import re
+import tempfile
+import os
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, Any, Optional
+from contextlib import contextmanager
 
 
 def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
@@ -272,3 +275,42 @@ def clean_data_surrogates(data):
         return clean_surrogate_chars(data)
     else:
         return data
+
+
+class TempJsonProcessor:
+    """Unified processor for handling JSON content via temporary files"""
+
+    @staticmethod
+    @contextmanager
+    def temp_file(content_bytes: bytes, suffix='.json'):
+        """Context manager for temporary file handling"""
+        temp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='wb', suffix=suffix, delete=False) as tmp_file:
+                tmp_file.write(content_bytes)
+                temp_path = Path(tmp_file.name)
+            yield temp_path
+        finally:
+            if temp_path and temp_path.exists():
+                temp_path.unlink(missing_ok=True)
+
+    @staticmethod
+    def process_bytes_to_dict(content_bytes: bytes, logger=None) -> Optional[Dict[str, Any]]:
+        """Process bytes content to JSON dict using temporary file"""
+        try:
+            with TempJsonProcessor.temp_file(content_bytes) as temp_path:
+                result = read_json_robust(temp_path, logger)
+                return result if isinstance(result, dict) else None
+        except Exception as e:
+            if logger:
+                logger.debug(f"Failed to process bytes to JSON dict: {e}")
+            return None
+
+    @staticmethod
+    def validate_json_bytes(content_bytes: bytes, logger=None) -> bool:
+        """Validate that bytes content is valid JSON"""
+        try:
+            result = TempJsonProcessor.process_bytes_to_dict(content_bytes, logger)
+            return isinstance(result, dict)
+        except Exception:
+            return False

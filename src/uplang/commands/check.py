@@ -5,24 +5,23 @@ Check command implementation
 from pathlib import Path
 
 from uplang.commands.base import BaseCommand, CommandResult
-from uplang.core.scanner import ModScanner
-from uplang.core.extractor import LanguageExtractor
-from uplang.core.synchronizer import LanguageSynchronizer
-from uplang.core.state import StateManager
-from uplang.exceptions import UpLangError, StateError
+from uplang.exceptions import UpLangError, StateError, handle_errors
+from uplang.json_utils import TempJsonProcessor
 
 
 class CheckCommand(BaseCommand):
 
+    @handle_errors(UpLangError)
     def execute(self) -> CommandResult:
-        """Execute the check command"""
+        """Execute the check command with enhanced dependency injection"""
         try:
             self.logger.section("Checking for Mod Updates")
 
-            scanner = ModScanner(self.logger)
-            extractor = LanguageExtractor(self.logger)
-            synchronizer = LanguageSynchronizer(self.logger)
-            state_manager = StateManager(self.logger)
+            # Get services from container
+            scanner = self.container.get_scanner()
+            extractor = self.container.get_extractor()
+            synchronizer = self.container.get_synchronizer()
+            state_manager = self.container.get_state_manager()
 
             self.logger.subsection("Loading previous state")
             previous_state = state_manager.load_state(self.config.state_file)
@@ -135,25 +134,14 @@ class CheckCommand(BaseCommand):
         with open(en_us_path, 'wb') as f:
             f.write(content)
 
-        # Try to extract Chinese translations from JAR
+        # Try to extract Chinese translations from JAR using unified processor
         zh_translations = None
         zh_cn_result = extractor.extract_language_file(mod, "zh_cn")
         if zh_cn_result:
-            from uplang.json_utils import read_json_robust
-            import tempfile
-
-            # Write Chinese content to temporary file and read it
             _, zh_content = zh_cn_result
-            with tempfile.NamedTemporaryFile(mode='wb', suffix='.json', delete=False) as tmp_file:
-                tmp_file.write(zh_content)
-                tmp_path = Path(tmp_file.name)
-
-            try:
-                zh_translations = read_json_robust(tmp_path, self.logger)
-                if zh_translations:
-                    self.logger.debug(f"Found Chinese translations in {mod.display_name}")
-            finally:
-                tmp_path.unlink(missing_ok=True)
+            zh_translations = TempJsonProcessor.process_bytes_to_dict(zh_content, self.logger)
+            if zh_translations:
+                self.logger.debug(f"Found Chinese translations in {mod.display_name}")
 
         # Synchronize with Chinese translations if available
         synchronizer.synchronize_file(zh_cn_path, en_us_path, zh_translations)

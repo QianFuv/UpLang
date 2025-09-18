@@ -11,7 +11,6 @@ from rich.console import Console
 from rich.panel import Panel
 
 from uplang.config import ProjectConfig, AppConfig
-from uplang.logger import get_logger
 from uplang.commands import InitCommand, CheckCommand
 from uplang.exceptions import UpLangError
 
@@ -88,14 +87,6 @@ def init(
             config
         )
 
-        logger = get_logger()
-        logger.setup(
-            resource_pack_dir,
-            log_level=log_level,
-            quiet=quiet,
-            no_color=no_color
-        )
-
         if not quiet:
             console.print(Panel(
                 "UpLang Initialization",
@@ -103,7 +94,7 @@ def init(
                 style="bold blue"
             ))
 
-        command = InitCommand(project_config, logger)
+        command = InitCommand(project_config)
         result = command.execute()
 
         if result.success:
@@ -175,14 +166,6 @@ def check(
             config
         )
 
-        logger = get_logger()
-        logger.setup(
-            resource_pack_dir,
-            log_level=log_level,
-            quiet=quiet,
-            no_color=no_color
-        )
-
         if not quiet:
             console.print(Panel(
                 "UpLang Check",
@@ -190,7 +173,7 @@ def check(
                 style="bold blue"
             ))
 
-        command = CheckCommand(project_config, logger)
+        command = CheckCommand(project_config)
         result = command.execute()
 
         if result.success:

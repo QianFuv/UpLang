@@ -6,27 +6,25 @@ import shutil
 from pathlib import Path
 
 from uplang.commands.base import BaseCommand, CommandResult
-from uplang.core.scanner import ModScanner
-from uplang.core.extractor import LanguageExtractor
-from uplang.core.synchronizer import LanguageSynchronizer
-from uplang.core.state import StateManager
-from uplang.exceptions import UpLangError
+from uplang.exceptions import UpLangError, handle_errors
 
 
 class InitCommand(BaseCommand):
 
+    @handle_errors(UpLangError)
     def execute(self) -> CommandResult:
-        """Execute the init command"""
+        """Execute the init command with enhanced dependency injection"""
         try:
             if not self._ensure_directories():
                 return CommandResult(False, "Failed to create required directories")
 
             self.logger.section("Initializing UpLang Project")
 
-            scanner = ModScanner(self.logger)
-            extractor = LanguageExtractor(self.logger)
-            synchronizer = LanguageSynchronizer(self.logger)
-            state_manager = StateManager(self.logger)
+            # Get services from container
+            scanner = self.container.get_scanner()
+            extractor = self.container.get_extractor()
+            synchronizer = self.container.get_synchronizer()
+            state_manager = self.container.get_state_manager()
 
             self.logger.subsection("Scanning mods")
             current_mods = scanner.scan_directory(self.config.mods_directory)
