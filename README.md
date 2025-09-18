@@ -10,6 +10,10 @@
 
 **UpLang** is a powerful command-line tool designed to streamline localization workflows for Minecraft Java Edition modpacks. It automates the complex process of managing translation files across multiple mods, ensuring perfect synchronization between English and Chinese language files while preserving translation integrity and key ordering.
 
+## 🌐 Languages
+
+**English** | [简体中文](README_zh.md)
+
 ## 🚀 Key Features
 
 - **🔍 Intelligent Mod Detection**: Automatically scans and tracks new, updated, and deleted mods
