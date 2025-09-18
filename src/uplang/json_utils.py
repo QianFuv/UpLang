@@ -10,11 +10,11 @@ import re
 import tempfile
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, Mapping
 from contextlib import contextmanager
 
 
-def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
+def read_json_robust(file_path: Path, logger=None) -> OrderedDict[str, Any]:
     """Read JSON file with robust encoding and format handling.
 
     This function implements multiple fallback strategies to handle
@@ -33,7 +33,7 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
         logger: Optional logger for debug messages
 
     Returns:
-        Dictionary containing parsed JSON data, empty dict on failure
+        OrderedDict containing parsed JSON data, empty OrderedDict on failure
     """
     try:
         with open(file_path, 'rb') as f:
@@ -69,7 +69,7 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
         if content_str is None:
             if logger:
                 logger.warning(f"Could not decode {file_path} with any encoding")
-            return {}
+            return OrderedDict()
 
         # Clean up surrogate characters
         content_str = clean_surrogate_chars(content_str)
@@ -88,7 +88,11 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
                 if isinstance(result, dict):  # Accept empty dicts too
                     if strategy_name != "direct" and logger:
                         logger.debug(f"Used {strategy_name} strategy for {file_path.name}")
-                    return result
+                    # Ensure we always return OrderedDict
+                    if isinstance(result, OrderedDict):
+                        return result
+                    else:
+                        return OrderedDict(result)
             except json.JSONDecodeError as e:
                 if strategy_name == "direct" and logger:
                     logger.debug(f"Initial JSON parse failed for {file_path.name}: {e}")
@@ -98,12 +102,12 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
 
         if logger:
             logger.warning(f"Could not parse JSON in {file_path} with any strategy")
-        return {}
+        return OrderedDict()
 
     except OSError as e:
         if logger:
             logger.warning(f"Failed to read {file_path}: {e}")
-        return {}
+        return OrderedDict()
 
 
 def clean_surrogate_chars(text: str) -> str:
@@ -284,7 +288,7 @@ def extract_dict_from_malformed_json(json_str: str) -> OrderedDict:
     return result
 
 
-def write_json_safe(file_path: Path, data: Dict[str, Any], logger=None):
+def write_json_safe(file_path: Path, data: Mapping[str, Any], logger=None):
     """Write JSON file with proper encoding and error handling.
 
     Ensures proper UTF-8 encoding and removes any problematic
@@ -292,7 +296,7 @@ def write_json_safe(file_path: Path, data: Dict[str, Any], logger=None):
 
     Args:
         file_path: Path where to write the JSON file
-        data: Dictionary to serialize as JSON
+        data: Mapping (dict or OrderedDict) to serialize as JSON
         logger: Optional logger for error messages
 
     Raises:
@@ -368,7 +372,7 @@ class TempJsonProcessor:
                 temp_path.unlink(missing_ok=True)
 
     @staticmethod
-    def process_bytes_to_dict(content_bytes: bytes, logger=None) -> Optional[Dict[str, Any]]:
+    def process_bytes_to_dict(content_bytes: bytes, logger=None) -> Optional[OrderedDict[str, Any]]:
         """Process bytes content to JSON dict using temporary file.
 
         Args:
@@ -376,12 +380,12 @@ class TempJsonProcessor:
             logger: Optional logger for debug messages
 
         Returns:
-            Parsed dictionary or None if parsing fails
+            Parsed OrderedDict or None if parsing fails
         """
         try:
             with TempJsonProcessor.temp_file(content_bytes) as temp_path:
                 result = read_json_robust(temp_path, logger)
-                return result if isinstance(result, dict) else None
+                return result if isinstance(result, OrderedDict) else None
         except Exception as e:
             if logger:
                 logger.debug(f"Failed to process bytes to JSON dict: {e}")
@@ -400,6 +404,6 @@ class TempJsonProcessor:
         """
         try:
             result = TempJsonProcessor.process_bytes_to_dict(content_bytes, logger)
-            return isinstance(result, dict)
+            return isinstance(result, OrderedDict)
         except Exception:
             return False
