@@ -1,5 +1,8 @@
 """
-Configuration management for UpLang with validation
+Configuration management for UpLang with validation.
+
+This module handles configuration loading, validation, and management
+for UpLang projects, including application and project-specific settings.
 """
 
 from dataclasses import dataclass
@@ -12,6 +15,7 @@ from uplang.exceptions import ConfigurationError, ValidationError
 
 @dataclass
 class AppConfig:
+    """Application-wide configuration settings."""
     log_level: str = "info"
     quiet_mode: bool = False
     no_color: bool = False
@@ -21,6 +25,7 @@ class AppConfig:
 
 @dataclass
 class ProjectConfig:
+    """Project-specific configuration settings."""
     mods_directory: Path
     resource_pack_directory: Path
     state_file: Path
@@ -28,6 +33,16 @@ class ProjectConfig:
 
     @classmethod
     def from_paths(cls, mods_dir: str, resource_pack_dir: str, config: Optional[AppConfig] = None) -> "ProjectConfig":
+        """Create ProjectConfig from directory paths.
+
+        Args:
+            mods_dir: Path to mods directory
+            resource_pack_dir: Path to resource pack directory
+            config: Optional AppConfig instance
+
+        Returns:
+            Configured ProjectConfig instance
+        """
         mods_path = Path(mods_dir).resolve()
         rp_path = Path(resource_pack_dir).resolve()
         state_file = rp_path / ".uplang_state.json"
@@ -44,11 +59,18 @@ class ProjectConfig:
 
 
 class ConfigValidator:
-    """Configuration validation utilities"""
+    """Configuration validation utilities."""
 
     @staticmethod
     def validate_app_config(config: AppConfig) -> List[str]:
-        """Validate AppConfig and return list of errors"""
+        """Validate AppConfig and return list of errors.
+
+        Args:
+            config: AppConfig instance to validate
+
+        Returns:
+            List of validation error messages
+        """
         errors = []
 
         # Validate log level
@@ -66,7 +88,14 @@ class ConfigValidator:
 
     @staticmethod
     def validate_project_config(config: ProjectConfig) -> List[str]:
-        """Validate ProjectConfig and return list of errors"""
+        """Validate ProjectConfig and return list of errors.
+
+        Args:
+            config: ProjectConfig instance to validate
+
+        Returns:
+            List of validation error messages
+        """
         errors = []
 
         # Validate directories
@@ -93,7 +122,14 @@ class ConfigValidator:
 
     @staticmethod
     def validate_and_raise(config: ProjectConfig) -> None:
-        """Validate configuration and raise exception if invalid"""
+        """Validate configuration and raise exception if invalid.
+
+        Args:
+            config: ProjectConfig instance to validate
+
+        Raises:
+            ValidationError: If configuration is invalid
+        """
         errors = ConfigValidator.validate_project_config(config)
         if errors:
             raise ValidationError(
@@ -103,11 +139,21 @@ class ConfigValidator:
 
 
 class ConfigManager:
-    """Enhanced configuration manager with validation"""
+    """Enhanced configuration manager with validation."""
 
     @staticmethod
     def load_project_config(config_path: Path) -> Dict[str, Any]:
-        """Load project configuration with error handling"""
+        """Load project configuration with error handling.
+
+        Args:
+            config_path: Path to configuration file
+
+        Returns:
+            Configuration dictionary
+
+        Raises:
+            ConfigurationError: If configuration cannot be loaded
+        """
         if not config_path.exists():
             return {}
 
@@ -123,7 +169,15 @@ class ConfigManager:
 
     @staticmethod
     def save_project_config(config_path: Path, data: Dict[str, Any]) -> None:
-        """Save project configuration with error handling"""
+        """Save project configuration with error handling.
+
+        Args:
+            config_path: Path to save configuration file
+            data: Configuration data to save
+
+        Raises:
+            ConfigurationError: If configuration cannot be saved
+        """
         try:
             config_path.parent.mkdir(parents=True, exist_ok=True)
             with open(config_path, 'w', encoding='utf-8') as f:
@@ -138,7 +192,19 @@ class ConfigManager:
     @staticmethod
     def create_validated_config(mods_dir: str, resource_pack_dir: str,
                               app_config: Optional[AppConfig] = None) -> ProjectConfig:
-        """Create and validate a project configuration"""
+        """Create and validate a project configuration.
+
+        Args:
+            mods_dir: Path to mods directory
+            resource_pack_dir: Path to resource pack directory
+            app_config: Optional application configuration
+
+        Returns:
+            Validated ProjectConfig instance
+
+        Raises:
+            ValidationError: If configuration is invalid
+        """
         config = ProjectConfig.from_paths(mods_dir, resource_pack_dir, app_config)
         ConfigValidator.validate_and_raise(config)
         return config

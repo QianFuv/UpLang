@@ -1,5 +1,8 @@
 """
-Custom exceptions for UpLang with enhanced error handling
+Custom exceptions for UpLang with enhanced error handling.
+
+This module defines a hierarchy of exceptions used throughout UpLang,
+with support for context information and error recovery strategies.
 """
 
 from typing import Optional, Dict, Any
@@ -8,15 +11,21 @@ import traceback
 
 
 class UpLangError(Exception):
-    """Base exception for UpLang with context support"""
+    """Base exception for UpLang with context support.
+
+    All UpLang-specific exceptions inherit from this class.
+    Provides support for context information and chained exceptions.
+    """
 
     def __init__(self, message: str, context: Optional[Dict[str, Any]] = None, cause: Optional[Exception] = None):
+        """Initialize exception with message, context, and optional cause."""
         super().__init__(message)
         self.context = context or {}
         self.cause = cause
         self.traceback_str = traceback.format_exc() if cause else None
 
     def __str__(self):
+        """Return string representation including context."""
         base_msg = super().__str__()
         if self.context:
             context_str = ", ".join(f"{k}={v}" for k, v in self.context.items())
@@ -25,42 +34,48 @@ class UpLangError(Exception):
 
 
 class ModScanError(UpLangError):
-    """Error during mod scanning"""
+    """Error during mod scanning operations."""
     pass
 
 
 class StateError(UpLangError):
-    """Error with state management"""
+    """Error with state management operations."""
     pass
 
 
 class ExtractionError(UpLangError):
-    """Error during language file extraction"""
+    """Error during language file extraction from JAR files."""
     pass
 
 
 class SynchronizationError(UpLangError):
-    """Error during language file synchronization"""
+    """Error during language file synchronization operations."""
     pass
 
 
 class ConfigurationError(UpLangError):
-    """Error with configuration"""
+    """Error with configuration validation or loading."""
     pass
 
 
 class FileSystemError(UpLangError):
-    """Error with file system operations"""
+    """Error with file system operations."""
     pass
 
 
 class ValidationError(UpLangError):
-    """Error with data validation"""
+    """Error with data validation operations."""
     pass
 
 
 def handle_errors(error_type: type = UpLangError, default_return=None, log_error: bool = True):
-    """Decorator for unified error handling"""
+    """Decorator for unified error handling.
+
+    Args:
+        error_type: Expected exception type to handle
+        default_return: Default value to return on error
+        log_error: Whether to log unexpected errors
+    """
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -100,11 +115,17 @@ def handle_errors(error_type: type = UpLangError, default_return=None, log_error
 
 
 class ErrorRecovery:
-    """Utility class for error recovery strategies"""
+    """Utility class for error recovery strategies."""
 
     @staticmethod
     def retry_on_failure(func, max_retries: int = 3, exceptions: tuple = (Exception,)):
-        """Retry function on failure"""
+        """Retry function on failure up to max_retries times.
+
+        Args:
+            func: Function to retry
+            max_retries: Maximum number of retry attempts
+            exceptions: Tuple of exceptions to catch and retry on
+        """
         for attempt in range(max_retries):
             try:
                 return func()
@@ -115,7 +136,13 @@ class ErrorRecovery:
 
     @staticmethod
     def safe_execute(func, default_return=None, logger=None):
-        """Execute function safely with fallback"""
+        """Execute function safely with fallback.
+
+        Args:
+            func: Function to execute
+            default_return: Value to return on error
+            logger: Optional logger for warning messages
+        """
         try:
             return func()
         except Exception as e:

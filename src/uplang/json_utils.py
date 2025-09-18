@@ -1,5 +1,8 @@
 """
-JSON handling utilities with robust error handling
+JSON handling utilities with robust error handling.
+
+This module provides comprehensive JSON parsing and writing functionality
+with support for multiple encodings, malformed JSON recovery, and order preservation.
 """
 
 import json
@@ -13,14 +16,25 @@ from contextlib import contextmanager
 
 
 def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
-    """
-    Read JSON file with robust encoding and format handling
+    """Read JSON file with robust encoding and format handling.
+
+    This function implements multiple fallback strategies to handle
+    various JSON encoding and formatting issues commonly found in
+    Minecraft mod language files.
 
     Handles:
-    - UTF-8 BOM
-    - Various encodings
-    - Surrogate characters
-    - Malformed JSON (trailing commas, unquoted keys, etc.)
+    - UTF-8 BOM removal
+    - Multiple encoding strategies (UTF-8, Latin1, CP1252)
+    - Surrogate character cleaning
+    - Malformed JSON (trailing commas, unquoted keys, comments)
+    - Order preservation using OrderedDict
+
+    Args:
+        file_path: Path to JSON file to read
+        logger: Optional logger for debug messages
+
+    Returns:
+        Dictionary containing parsed JSON data, empty dict on failure
     """
     try:
         with open(file_path, 'rb') as f:
@@ -94,23 +108,38 @@ def read_json_robust(file_path: Path, logger=None) -> Dict[str, Any]:
 
 
 def clean_surrogate_chars(text: str) -> str:
-    """Remove or replace surrogate characters that can't be encoded in UTF-8"""
+    """Remove or replace surrogate characters that can't be encoded in UTF-8.
+
+    Args:
+        text: Input text that may contain surrogate characters
+
+    Returns:
+        Cleaned text with surrogate characters removed
+    """
     # Remove high and low surrogate characters
     text = re.sub(r'[\ud800-\udfff]', '', text)
     return text
 
 
 def fix_common_json_issues(json_str: str) -> str:
-    """
-    Attempt to fix common JSON formatting issues
+    """Attempt to fix common JSON formatting issues.
+
+    This function applies various fixes to handle malformed JSON
+    commonly found in Minecraft mod files.
 
     Fixes:
-    - Trailing commas
-    - Unquoted keys
-    - Comments (// and /* */)
+    - Trailing commas before closing brackets
+    - Unquoted object keys
+    - Single-line and multi-line comments
     - Invalid control characters
-    - Missing colons
-    - Malformed strings
+    - Missing colons between keys and values
+    - Malformed string values
+
+    Args:
+        json_str: Raw JSON string to fix
+
+    Returns:
+        Fixed JSON string
     """
     # Remove comments first
     json_str = re.sub(r'//.*?$', '', json_str, flags=re.MULTILINE)
@@ -150,8 +179,16 @@ def fix_common_json_issues(json_str: str) -> str:
 
 
 def aggressive_json_fix(json_str: str) -> str:
-    """
-    More aggressive JSON fixing for severely malformed files
+    """More aggressive JSON fixing for severely malformed files.
+
+    Used as a fallback when standard fixes fail. Applies more
+    intrusive transformations to attempt parsing.
+
+    Args:
+        json_str: JSON string that failed standard parsing
+
+    Returns:
+        Heavily modified JSON string
     """
     # Apply basic fixes first
     json_str = fix_common_json_issues(json_str)
@@ -209,8 +246,16 @@ def aggressive_json_fix(json_str: str) -> str:
 
 
 def extract_dict_from_malformed_json(json_str: str) -> OrderedDict:
-    """
-    Last resort: try to extract key-value pairs from severely malformed JSON
+    """Last resort: extract key-value pairs from severely malformed JSON.
+
+    When all parsing strategies fail, this function uses regex patterns
+    to extract anything that looks like key-value pairs.
+
+    Args:
+        json_str: Malformed JSON string
+
+    Returns:
+        OrderedDict with extracted key-value pairs
     """
     result = OrderedDict()
 
@@ -241,8 +286,18 @@ def extract_dict_from_malformed_json(json_str: str) -> OrderedDict:
 
 
 def write_json_safe(file_path: Path, data: Dict[str, Any], logger=None):
-    """
-    Write JSON file with proper encoding and error handling
+    """Write JSON file with proper encoding and error handling.
+
+    Ensures proper UTF-8 encoding and removes any problematic
+    surrogate characters before writing.
+
+    Args:
+        file_path: Path where to write the JSON file
+        data: Dictionary to serialize as JSON
+        logger: Optional logger for error messages
+
+    Raises:
+        OSError: If file cannot be written
     """
     try:
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -265,7 +320,14 @@ def write_json_safe(file_path: Path, data: Dict[str, Any], logger=None):
 
 
 def clean_data_surrogates(data):
-    """Recursively clean surrogate characters from data structures"""
+    """Recursively clean surrogate characters from data structures.
+
+    Args:
+        data: Data structure (dict, list, str, or other) to clean
+
+    Returns:
+        Cleaned data structure with surrogate characters removed
+    """
     if isinstance(data, dict):
         return {clean_surrogate_chars(k) if isinstance(k, str) else k:
                clean_data_surrogates(v) for k, v in data.items()}
@@ -278,12 +340,24 @@ def clean_data_surrogates(data):
 
 
 class TempJsonProcessor:
-    """Unified processor for handling JSON content via temporary files"""
+    """Unified processor for handling JSON content via temporary files.
+
+    This class provides utilities for processing JSON content that may
+    be in bytes form or require temporary file handling.
+    """
 
     @staticmethod
     @contextmanager
     def temp_file(content_bytes: bytes, suffix='.json'):
-        """Context manager for temporary file handling"""
+        """Context manager for temporary file handling.
+
+        Args:
+            content_bytes: Bytes content to write to temporary file
+            suffix: File suffix for temporary file
+
+        Yields:
+            Path object for the temporary file
+        """
         temp_path = None
         try:
             with tempfile.NamedTemporaryFile(mode='wb', suffix=suffix, delete=False) as tmp_file:
@@ -296,7 +370,15 @@ class TempJsonProcessor:
 
     @staticmethod
     def process_bytes_to_dict(content_bytes: bytes, logger=None) -> Optional[Dict[str, Any]]:
-        """Process bytes content to JSON dict using temporary file"""
+        """Process bytes content to JSON dict using temporary file.
+
+        Args:
+            content_bytes: Raw bytes containing JSON data
+            logger: Optional logger for debug messages
+
+        Returns:
+            Parsed dictionary or None if parsing fails
+        """
         try:
             with TempJsonProcessor.temp_file(content_bytes) as temp_path:
                 result = read_json_robust(temp_path, logger)
@@ -308,7 +390,15 @@ class TempJsonProcessor:
 
     @staticmethod
     def validate_json_bytes(content_bytes: bytes, logger=None) -> bool:
-        """Validate that bytes content is valid JSON"""
+        """Validate that bytes content is valid JSON.
+
+        Args:
+            content_bytes: Raw bytes to validate
+            logger: Optional logger for debug messages
+
+        Returns:
+            True if content can be parsed as JSON, False otherwise
+        """
         try:
             result = TempJsonProcessor.process_bytes_to_dict(content_bytes, logger)
             return isinstance(result, dict)

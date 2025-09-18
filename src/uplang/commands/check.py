@@ -1,5 +1,8 @@
 """
-Check command implementation
+Check command implementation.
+
+This module implements the check command that compares current mods
+with previous state and updates language files accordingly.
 """
 
 from pathlib import Path
@@ -10,10 +13,18 @@ from uplang.json_utils import TempJsonProcessor
 
 
 class CheckCommand(BaseCommand):
+    """Command to check for mod updates and synchronize language files."""
 
     @handle_errors(UpLangError)
     def execute(self) -> CommandResult:
-        """Execute the check command with enhanced dependency injection"""
+        """Execute the check command with enhanced dependency injection.
+
+        This method loads previous state, compares with current mods,
+        processes changes, and synchronizes all language files.
+
+        Returns:
+            CommandResult with change summary and statistics
+        """
         try:
             self.logger.section("Checking for Mod Updates")
 
@@ -67,7 +78,11 @@ class CheckCommand(BaseCommand):
             return CommandResult(False, f"Unexpected error: {e}")
 
     def _validate_directories(self, previous_state):
-        """Validate that directories match the previous state"""
+        """Validate that directories match the previous state.
+
+        Args:
+            previous_state: Dictionary containing previous project state
+        """
         project_info = previous_state.get("project_info", {})
 
         old_mods_dir = project_info.get("mods_directory")
@@ -79,7 +94,13 @@ class CheckCommand(BaseCommand):
             self.logger.warning(f"Resource pack directory changed: {old_rp_dir} -> {self.config.resource_pack_directory}")
 
     def _process_changes(self, comparison, extractor, synchronizer):
-        """Process mod changes"""
+        """Process mod changes by handling new, updated, and deleted mods.
+
+        Args:
+            comparison: ModComparisonResult with change details
+            extractor: Language file extractor service
+            synchronizer: Language file synchronizer service
+        """
         if comparison.new_mods:
             self.logger.info(f"Processing {len(comparison.new_mods)} new mods")
             for mod in comparison.new_mods:
@@ -94,7 +115,12 @@ class CheckCommand(BaseCommand):
             self.logger.info(f"Found {len(comparison.deleted_mods)} deleted mods")
 
     def _process_new_mod(self, mod, extractor):
-        """Process a new mod"""
+        """Process a new mod by extracting and setting up language files.
+
+        Args:
+            mod: New mod object to process
+            extractor: Language file extractor service
+        """
         # First check if the mod has language files
         en_us_result = extractor.extract_language_file(mod, "en_us")
         if not en_us_result:
@@ -120,7 +146,13 @@ class CheckCommand(BaseCommand):
         self.logger.debug(f"Added new mod: {mod.display_name}")
 
     def _process_updated_mod(self, mod, extractor, synchronizer):
-        """Process an updated mod"""
+        """Process an updated mod by updating language files.
+
+        Args:
+            mod: Updated mod object to process
+            extractor: Language file extractor service
+            synchronizer: Language file synchronizer service
+        """
         en_us_result = extractor.extract_language_file(mod, "en_us")
         if not en_us_result:
             return
@@ -148,7 +180,15 @@ class CheckCommand(BaseCommand):
         self.logger.debug(f"Updated mod: {mod.display_name}")
 
     def _synchronize_all_files(self, mods, synchronizer):
-        """Synchronize all language files"""
+        """Synchronize all language files across all mods.
+
+        Args:
+            mods: List of all current mods
+            synchronizer: Language file synchronizer service
+
+        Returns:
+            SyncStats with synchronization statistics
+        """
         file_pairs = []
         for mod in mods:
             target_dir = self.config.resource_pack_directory / "assets" / mod.mod_id / "lang"
@@ -161,7 +201,13 @@ class CheckCommand(BaseCommand):
         return synchronizer.synchronize_multiple(file_pairs)
 
     def _report_results(self, comparison, sync_stats, current_mods):
-        """Report check results"""
+        """Report check results including changes and statistics.
+
+        Args:
+            comparison: ModComparisonResult with change details
+            sync_stats: SyncStats with synchronization statistics
+            current_mods: List of all current mods
+        """
         if comparison.has_changes:
             changes_data = []
             if comparison.new_mods:

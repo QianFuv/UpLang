@@ -1,5 +1,8 @@
 """
-Mod scanning functionality
+Mod scanning functionality.
+
+This module provides functionality to scan directories for Minecraft mod JAR files,
+extract metadata from both Forge and Fabric mods, and create mod information objects.
 """
 
 import hashlib
@@ -18,12 +21,24 @@ from uplang.utils import create_safe_mod_id
 
 
 class ModScanner:
+    """Scanner for Minecraft mod JAR files with metadata extraction."""
 
     def __init__(self, logger: UpLangLogger):
+        """Initialize ModScanner with logger."""
         self.logger = logger
 
     def scan_directory(self, mods_dir: Path) -> List[Mod]:
-        """Scan a directory for mod JAR files and extract metadata"""
+        """Scan a directory for mod JAR files and extract metadata.
+
+        Args:
+            mods_dir: Path to directory containing mod JAR files
+
+        Returns:
+            List of Mod objects with extracted metadata
+
+        Raises:
+            ModScanError: If directory cannot be accessed
+        """
         if not mods_dir.exists() or not mods_dir.is_dir():
             raise ModScanError(f"Mods directory not found: {mods_dir}")
 
@@ -57,7 +72,17 @@ class ModScanner:
         return mods
 
     def _scan_jar_file(self, jar_path: Path) -> Optional[Mod]:
-        """Scan a single JAR file for mod metadata"""
+        """Scan a single JAR file for mod metadata.
+
+        Args:
+            jar_path: Path to JAR file to scan
+
+        Returns:
+            Mod object if metadata found, None otherwise
+
+        Raises:
+            ModScanError: If JAR file cannot be read
+        """
         try:
             with zipfile.ZipFile(jar_path, 'r') as jar_file:
                 mod = self._extract_forge_metadata(jar_file, jar_path)
@@ -74,7 +99,15 @@ class ModScanner:
             raise ModScanError(f"Cannot read JAR file {jar_path}: {e}")
 
     def _extract_forge_metadata(self, jar_file: zipfile.ZipFile, jar_path: Path) -> Optional[Mod]:
-        """Extract metadata from Forge mod"""
+        """Extract metadata from Forge mod using mods.toml.
+
+        Args:
+            jar_file: Open ZipFile object
+            jar_path: Path to the JAR file
+
+        Returns:
+            Mod object if Forge metadata found, None otherwise
+        """
         if 'META-INF/mods.toml' not in jar_file.namelist():
             return None
 
@@ -99,7 +132,15 @@ class ModScanner:
             return None
 
     def _extract_fabric_metadata(self, jar_file: zipfile.ZipFile, jar_path: Path) -> Optional[Mod]:
-        """Extract metadata from Fabric mod"""
+        """Extract metadata from Fabric mod using fabric.mod.json.
+
+        Args:
+            jar_file: Open ZipFile object
+            jar_path: Path to the JAR file
+
+        Returns:
+            Mod object if Fabric metadata found, None otherwise
+        """
         if 'fabric.mod.json' not in jar_file.namelist():
             return None
 
@@ -120,7 +161,18 @@ class ModScanner:
             return None
 
     def _extract_fallback_metadata(self, jar_file: zipfile.ZipFile, jar_path: Path) -> Optional[Mod]:
-        """Extract metadata by scanning for language files"""
+        """Extract metadata by scanning for language files.
+
+        Used when standard metadata files are not found.
+        Attempts to identify mod by presence of assets/*/lang/*.json files.
+
+        Args:
+            jar_file: Open ZipFile object
+            jar_path: Path to the JAR file
+
+        Returns:
+            Mod object if language files found, None otherwise
+        """
         for file_path in jar_file.namelist():
             if file_path.startswith('assets/') and '/lang/' in file_path and file_path.endswith('.json'):
                 parts = file_path.split('/')
@@ -137,7 +189,14 @@ class ModScanner:
         return None
 
     def _create_unrecognized_mod(self, jar_path: Path) -> Mod:
-        """Create a mod entry for unrecognized JAR files"""
+        """Create a mod entry for unrecognized JAR files.
+
+        Args:
+            jar_path: Path to the unrecognized JAR file
+
+        Returns:
+            Mod object with generated metadata
+        """
         safe_mod_id = create_safe_mod_id(jar_path.name)
         return Mod(
             mod_id=safe_mod_id,
@@ -149,7 +208,14 @@ class ModScanner:
 
     @staticmethod
     def _calculate_hash(file_path: Path) -> str:
-        """Calculate SHA256 hash of a file"""
+        """Calculate SHA256 hash of a file.
+
+        Args:
+            file_path: Path to file to hash
+
+        Returns:
+            Hexadecimal SHA256 hash string
+        """
         sha256 = hashlib.sha256()
         with open(file_path, 'rb') as f:
             while chunk := f.read(4096):
@@ -158,7 +224,14 @@ class ModScanner:
 
     @staticmethod
     def _decode_content(content_bytes: bytes) -> str:
-        """Decode bytes content with fallback encoding"""
+        """Decode bytes content with fallback encoding.
+
+        Args:
+            content_bytes: Raw bytes to decode
+
+        Returns:
+            Decoded string using UTF-8 or fallback encoding
+        """
         try:
             return content_bytes.decode('utf-8')
         except UnicodeDecodeError:

@@ -1,5 +1,8 @@
 """
-UpLang CLI interface
+UpLang CLI interface.
+
+This module provides the command-line interface for UpLang,
+a tool to synchronize language files for Minecraft modpacks.
 """
 
 import sys
@@ -25,6 +28,7 @@ console = Console()
 
 
 def version_callback(value: bool):
+    """Display version information and exit."""
     if value:
         console.print("UpLang version 0.2.0")
         raise typer.Exit()
@@ -38,7 +42,7 @@ def main(
         help="Show version and exit"
     )
 ):
-    """UpLang - Minecraft modpack language file synchronizer"""
+    """UpLang - Minecraft modpack language file synchronizer."""
     pass
 
 
@@ -73,7 +77,11 @@ def init(
         help="Disable colored output"
     )
 ):
-    """Initialize or synchronize resource pack with mods directory"""
+    """Initialize or synchronize resource pack with mods directory.
+
+    This command scans the mods directory for JAR files, extracts language files,
+    and creates/updates the resource pack structure with synchronized translations.
+    """
     try:
         config = AppConfig(
             log_level=log_level,
@@ -152,7 +160,11 @@ def check(
         help="Disable colored output"
     )
 ):
-    """Check for mod updates and synchronize language files"""
+    """Check for mod updates and synchronize language files.
+
+    This command compares the current state with the previous scan,
+    identifies changes, and updates language files accordingly.
+    """
     try:
         config = AppConfig(
             log_level=log_level,
@@ -200,7 +212,7 @@ def check(
 
 
 def cli():
-    """Entry point for the CLI"""
+    """Entry point for the CLI."""
     app()
 
 

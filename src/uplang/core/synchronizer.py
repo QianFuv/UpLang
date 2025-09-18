@@ -1,5 +1,8 @@
 """
-Language file synchronization functionality
+Language file synchronization functionality.
+
+This module provides functionality to synchronize Chinese and English
+language files, maintaining translation integrity and key ordering.
 """
 
 import json
@@ -16,17 +19,25 @@ from uplang.json_utils import read_json_robust, write_json_safe
 
 
 class LanguageSynchronizer:
+    """Synchronizer for Minecraft mod language files."""
 
     def __init__(self, logger: UpLangLogger):
+        """Initialize LanguageSynchronizer with logger."""
         self.logger = logger
 
     def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Dict[str, str] = None) -> SyncStats:
-        """Synchronize a Chinese language file with its English counterpart
+        """Synchronize a Chinese language file with its English counterpart.
+
+        This method ensures that the Chinese file contains all keys from the English file
+        while preserving existing translations and maintaining key order.
 
         Args:
             zh_cn_path: Path to Chinese language file
             en_us_path: Path to English language file
             zh_translations: Optional dict of Chinese translations for new keys
+
+        Returns:
+            SyncStats object containing synchronization statistics
         """
         stats = SyncStats()
 
@@ -87,7 +98,14 @@ class LanguageSynchronizer:
             return stats
 
     def synchronize_multiple(self, file_pairs: list) -> SyncStats:
-        """Synchronize multiple language file pairs with progress tracking"""
+        """Synchronize multiple language file pairs with progress tracking.
+
+        Args:
+            file_pairs: List of tuples containing (zh_cn_path, en_us_path)
+
+        Returns:
+            Aggregated SyncStats for all processed files
+        """
         total_stats = SyncStats()
 
         if not file_pairs:
@@ -117,7 +135,12 @@ class LanguageSynchronizer:
 
 
 def synchronize_language_file(zh_cn_path: str, en_us_path: str):
-    """Legacy function for backward compatibility"""
+    """Legacy function for backward compatibility.
+
+    Args:
+        zh_cn_path: Path to Chinese language file
+        en_us_path: Path to English language file
+    """
     from uplang.logger import get_logger
     synchronizer = LanguageSynchronizer(get_logger())
     synchronizer.synchronize_file(Path(zh_cn_path), Path(en_us_path))
