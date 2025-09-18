@@ -25,7 +25,7 @@ class LanguageSynchronizer:
         """Initialize LanguageSynchronizer with logger."""
         self.logger = logger
 
-    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Dict[str, str] = None) -> SyncStats:
+    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Dict[str, str] | None = None) -> SyncStats:
         """Synchronize a Chinese language file with its English counterpart.
 
         This method ensures that the Chinese file contains all keys from the English file

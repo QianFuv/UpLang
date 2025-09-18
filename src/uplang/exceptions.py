@@ -68,7 +68,7 @@ class ValidationError(UpLangError):
     pass
 
 
-def handle_errors(error_type: type = UpLangError, default_return=None, log_error: bool = True):
+def handle_errors(error_type: type[Exception] = UpLangError, default_return=None, log_error: bool = True):
     """Decorator for unified error handling.
 
     Args:
@@ -105,11 +105,14 @@ def handle_errors(error_type: type = UpLangError, default_return=None, log_error
                 if default_return is not None:
                     return default_return
 
-                raise error_type(
-                    f"Unexpected error in {func.__name__}: {str(e)}",
-                    context=context,
-                    cause=e
-                )
+                if issubclass(error_type, UpLangError):
+                    raise error_type(
+                        f"Unexpected error in {func.__name__}: {str(e)}",
+                        context=context,
+                        cause=e
+                    )
+                else:
+                    raise error_type(f"Unexpected error in {func.__name__}: {str(e)}")
         return wrapper
     return decorator
 
