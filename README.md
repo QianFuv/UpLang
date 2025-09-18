@@ -1,12 +1,9 @@
 # UpLang
 
-[![PyPI version](https://badge.fury.io/py/uplang.svg)](https://badge.fury.io/py/uplang)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-passing-green.svg)](tests/)
-[![Code Quality](https://img.shields.io/badge/code%20quality-A-brightgreen.svg)](src/)
-[![Documentation](https://img.shields.io/badge/docs-comprehensive-blue.svg)](CLAUDE.md)
-[![Downloads](https://pepy.tech/badge/uplang)](https://pepy.tech/project/uplang)
+[![PyPI](https://img.shields.io/pypi/v/UpLang)](https://badge.fury.io/py/uplang)
+[![Python](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FQianFuv%2FUpLang%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/QianFuv/UpLang)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/pypi/dm/uplang?color=light-green)](https://pypi.org/project/uplang/)
 
 **UpLang** is a powerful command-line tool designed to streamline localization workflows for Minecraft Java Edition modpacks. It automates the complex process of managing translation files across multiple mods, ensuring perfect synchronization between English and Chinese language files while preserving translation integrity and key ordering.
 

@@ -1,12 +1,9 @@
 # UpLang
 
-[![PyPI版本](https://badge.fury.io/py/uplang.svg)](https://badge.fury.io/py/uplang)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![许可证: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![测试状态](https://img.shields.io/badge/tests-passing-green.svg)](tests/)
-[![代码质量](https://img.shields.io/badge/code%20quality-A-brightgreen.svg)](src/)
-[![文档](https://img.shields.io/badge/docs-comprehensive-blue.svg)](CLAUDE.md)
-[![下载量](https://pepy.tech/badge/uplang)](https://pepy.tech/project/uplang)
+[![PyPI](https://img.shields.io/pypi/v/UpLang)](https://badge.fury.io/py/uplang)
+[![Python](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FQianFuv%2FUpLang%2Frefs%2Fheads%2Fmain%2Fpyproject.toml)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/QianFuv/UpLang)](https://opensource.org/licenses/MIT)
+[![Downloads](https://img.shields.io/pypi/dm/uplang?color=light-green)](https://pypi.org/project/uplang/)
 
 **UpLang** 是一个强大的命令行工具，专为简化 Minecraft Java 版模组包的本地化工作流程而设计。它自动化了管理多个模组翻译文件的复杂过程，确保英文和中文语言文件之间的完美同步，同时保持翻译完整性和键值排序。
 
