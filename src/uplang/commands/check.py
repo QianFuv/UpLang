@@ -131,10 +131,32 @@ class CheckCommand(BaseCommand):
         en_us_path = target_dir / "en_us.json"
         zh_cn_path = target_dir / "zh_cn.json"
 
+        # Update English file
         with open(en_us_path, 'wb') as f:
             f.write(content)
 
-        synchronizer.synchronize_file(zh_cn_path, en_us_path)
+        # Try to extract Chinese translations from JAR
+        zh_translations = None
+        zh_cn_result = extractor.extract_language_file(mod, "zh_cn")
+        if zh_cn_result:
+            from uplang.json_utils import read_json_robust
+            import tempfile
+
+            # Write Chinese content to temporary file and read it
+            _, zh_content = zh_cn_result
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.json', delete=False) as tmp_file:
+                tmp_file.write(zh_content)
+                tmp_path = Path(tmp_file.name)
+
+            try:
+                zh_translations = read_json_robust(tmp_path, self.logger)
+                if zh_translations:
+                    self.logger.debug(f"Found Chinese translations in {mod.display_name}")
+            finally:
+                tmp_path.unlink(missing_ok=True)
+
+        # Synchronize with Chinese translations if available
+        synchronizer.synchronize_file(zh_cn_path, en_us_path, zh_translations)
         self.logger.debug(f"Updated mod: {mod.display_name}")
 
     def _synchronize_all_files(self, mods, synchronizer):

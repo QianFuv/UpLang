@@ -20,8 +20,14 @@ class LanguageSynchronizer:
     def __init__(self, logger: UpLangLogger):
         self.logger = logger
 
-    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path) -> SyncStats:
-        """Synchronize a Chinese language file with its English counterpart"""
+    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Dict[str, str] = None) -> SyncStats:
+        """Synchronize a Chinese language file with its English counterpart
+
+        Args:
+            zh_cn_path: Path to Chinese language file
+            en_us_path: Path to English language file
+            zh_translations: Optional dict of Chinese translations for new keys
+        """
         stats = SyncStats()
 
         try:
@@ -56,8 +62,11 @@ class LanguageSynchronizer:
                         # Keep existing translation
                         new_zh_data[key] = zh_data[key]
                     else:
-                        # Add new key with English value
-                        new_zh_data[key] = value
+                        # Add new key with Chinese translation if available, otherwise English value
+                        if zh_translations and key in zh_translations:
+                            new_zh_data[key] = zh_translations[key]
+                        else:
+                            new_zh_data[key] = value
                         stats.keys_added += 1
 
                 # Count removed keys
