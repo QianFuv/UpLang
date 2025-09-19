@@ -1,43 +1,24 @@
 """
 Version management for UpLang.
 
-This module provides centralized version information retrieval.
+This module provides centralized version information retrieval from
+installed package metadata via importlib.metadata.
 """
 
-import tomllib
-from pathlib import Path
+from importlib.metadata import version as get_installed_version
 from typing import Optional
 
 
 def get_version() -> str:
-    """Get the current version from pyproject.toml.
+    """Get the current version from package metadata.
 
     Returns:
-        Version string from pyproject.toml, fallback to "unknown" if not found
+        Version string from package metadata, fallback to "unknown" if not found
     """
     try:
-        # Find pyproject.toml by traversing up from this file
-        current_path = Path(__file__).parent
-        for _ in range(5):  # Limit search depth
-            pyproject_path = current_path / "pyproject.toml"
-            if pyproject_path.exists():
-                with open(pyproject_path, 'rb') as f:
-                    data = tomllib.load(f)
-                return data.get('project', {}).get('version', 'unknown')
-            current_path = current_path.parent
-
-        # If not found, try relative to the source directory
-        src_dir = Path(__file__).parent.parent.parent
-        pyproject_path = src_dir / "pyproject.toml"
-        if pyproject_path.exists():
-            with open(pyproject_path, 'rb') as f:
-                data = tomllib.load(f)
-            return data.get('project', {}).get('version', 'unknown')
-
+        return get_installed_version("uplang")
     except Exception:
-        pass
-
-    return "unknown"
+        return "unknown"
 
 
 # Cache the version to avoid repeated file reads
