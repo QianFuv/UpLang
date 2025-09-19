@@ -194,6 +194,10 @@ class CheckCommand(BaseCommand):
             en_us_path = target_dir / "en_us.json"
 
             if en_us_path.exists():
+                # Set language file information for mods that have existing files
+                if not mod.has_lang_files:
+                    mod.has_lang_files = True
+                    mod.lang_files["en_us"] = f"assets/{mod.mod_id}/lang/en_us.json"
                 file_pairs.append((zh_cn_path, en_us_path))
 
         return synchronizer.synchronize_multiple(file_pairs)
