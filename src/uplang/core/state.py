@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 from uplang.exceptions import StateError
 from uplang.logger import UpLangLogger
 from uplang.models import Mod, ModComparisonResult, ModStatus
+from uplang.version import get_cached_version
 
 
 class StateManager:
@@ -21,7 +22,7 @@ class StateManager:
         """Save current project state to file"""
         try:
             state_data = {
-                "version": "0.2.0",
+                "version": get_cached_version(),
                 "timestamp": datetime.now().isoformat(),
                 "project_info": {
                     "mods_directory": str(mods_dir),

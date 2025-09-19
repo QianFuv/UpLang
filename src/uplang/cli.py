@@ -30,7 +30,8 @@ console = Console()
 def version_callback(value: bool):
     """Display version information and exit."""
     if value:
-        console.print("UpLang version 0.2.0")
+        from uplang.version import get_cached_version
+        console.print(f"UpLang version {get_cached_version()}")
         raise typer.Exit()
 
 
