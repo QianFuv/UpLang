@@ -131,31 +131,36 @@ uplang check "~/.minecraft/mods" "./我的资源包"
 运行综合测试套件以验证一切正常工作：
 
 ```bash
-# 如果从PyPI安装
-pip install uplang[test]
-python -m pytest tests/test_integration.py -v
+# 运行所有测试
+PYTHONPATH=src python -m pytest tests/ -v
 
-# 如果使用开发环境安装
-uv run pytest tests/test_integration.py -v
-# 或
-PYTHONPATH=/path/to/UpLang/src python -m pytest tests/test_integration.py -v
+# 生成覆盖率报告
+PYTHONPATH=src python -m pytest tests/ --cov=uplang --cov-report=html
+
+# 运行特定测试模块
+PYTHONPATH=src python -m pytest tests/test_json_utils.py -v    # JSON处理测试
+PYTHONPATH=src python -m pytest tests/test_models.py -v        # 数据模型测试
+PYTHONPATH=src python -m pytest tests/test_utils.py -v         # 工具函数测试
+
+# 如果使用uv开发环境
+uv run pytest tests/ -v
 ```
 
 测试套件包括：
-- **模拟模组生成**: 创建现实的测试场景
-- **端到端测试**: 完整的 `init` 和 `check` 命令工作流
-- **边缘情况覆盖**: 格式错误的JSON、编码问题、错误条件
-- **状态验证**: 验证状态持久化和变更检测
-- **顺序保持**: 确保键值排序得到维护
-- **错误恢复**: 测试回退策略和错误处理
+- **数据模型测试**: 模组对象、比较结果和同步统计的综合验证
+- **JSON处理**: 具备编码回退、格式错误JSON恢复和顺序保持的强健解析
+- **工具函数**: 文件名清理、模组ID创建和路径处理
+- **错误处理**: 边缘情况、无效输入和优雅恢复策略
+- **Unicode支持**: 国际字符、表情符号和编码边缘情况
+- **顺序保持**: 确保JSON键值排序在操作期间得到维护
 
-### 当前测试状态
+### 当前测试覆盖范围
 
-- ✅ **集成测试**: 完整工作流测试
-- ✅ **JSON处理**: 强健的解析和编码处理
-- ✅ **状态管理**: 项目状态持久化和比较
-- ✅ **错误处理**: 异常层次结构和恢复策略
-- ✅ **顺序保持**: 键值排序维护验证
+- ✅ **数据模型**: 模组元数据、比较结果、同步统计
+- ✅ **JSON处理**: 多编码支持、格式错误JSON恢复、OrderedDict保持
+- ✅ **工具函数**: 安全文件名处理、模组ID生成、字符串操作
+- ✅ **错误处理**: 异常层次结构和上下文保持
+- ✅ **Unicode处理**: 国际字符支持和编码回退
 
 ## 🔧 高级特性
 

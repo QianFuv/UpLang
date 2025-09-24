@@ -131,31 +131,36 @@ MyResourcePack/
 Run the comprehensive test suite to verify everything works correctly:
 
 ```bash
-# If installed from PyPI
-pip install uplang[test]
-python -m pytest tests/test_integration.py -v
+# Run all tests
+PYTHONPATH=src python -m pytest tests/ -v
 
-# If using development installation
-uv run pytest tests/test_integration.py -v
-# or
-PYTHONPATH=/path/to/UpLang/src python -m pytest tests/test_integration.py -v
+# Run with coverage report
+PYTHONPATH=src python -m pytest tests/ --cov=uplang --cov-report=html
+
+# Run specific test modules
+PYTHONPATH=src python -m pytest tests/test_json_utils.py -v    # JSON processing tests
+PYTHONPATH=src python -m pytest tests/test_models.py -v        # Data model tests
+PYTHONPATH=src python -m pytest tests/test_utils.py -v         # Utility function tests
+
+# If using development installation with uv
+uv run pytest tests/ -v
 ```
 
 The test suite includes:
-- **Mock mod generation**: Creates realistic test scenarios
-- **End-to-end testing**: Full `init` and `check` command workflows
-- **Edge case coverage**: Malformed JSON, encoding issues, error conditions
-- **State verification**: Validates state persistence and change detection
-- **Order preservation**: Ensures key ordering is maintained
-- **Error recovery**: Tests fallback strategies and error handling
+- **Data Model Testing**: Comprehensive validation of mod objects, comparison results, and sync statistics
+- **JSON Processing**: Robust parsing with encoding fallbacks, malformed JSON recovery, and order preservation
+- **Utility Functions**: Filename sanitization, mod ID creation, and path handling
+- **Error Handling**: Edge cases, invalid inputs, and graceful recovery strategies
+- **Unicode Support**: International characters, emoji, and encoding edge cases
+- **Order Preservation**: Ensures JSON key ordering is maintained during operations
 
-### Current Test Status
+### Current Test Coverage
 
-- ✅ **Integration Tests**: Complete workflow testing
-- ✅ **JSON Processing**: Robust parsing and encoding handling
-- ✅ **State Management**: Project state persistence and comparison
-- ✅ **Error Handling**: Exception hierarchy and recovery strategies
-- ✅ **Order Preservation**: Key ordering maintenance verification
+- ✅ **Data Models**: Mod metadata, comparison results, synchronization statistics
+- ✅ **JSON Processing**: Multi-encoding support, malformed JSON recovery, OrderedDict preservation
+- ✅ **Utility Functions**: Safe filename handling, mod ID generation, string operations
+- ✅ **Error Handling**: Exception hierarchy and context preservation
+- ✅ **Unicode Handling**: International character support and encoding fallbacks
 
 ## 🔧 Advanced Features
 
