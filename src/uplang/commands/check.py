@@ -210,19 +210,7 @@ class CheckCommand(BaseCommand):
             sync_stats: SyncStats with synchronization statistics
             current_mods: List of all current mods
         """
-        if comparison.has_changes:
-            changes_data = []
-            if comparison.new_mods:
-                for mod in comparison.new_mods:
-                    changes_data.append(["NEW", mod.display_name, mod.version])
-            if comparison.updated_mods:
-                for mod in comparison.updated_mods:
-                    changes_data.append(["UPDATED", mod.display_name, mod.version])
-            if comparison.deleted_mods:
-                for mod in comparison.deleted_mods:
-                    changes_data.append(["DELETED", mod.display_name, mod.version])
-
-            self.logger.table("Mod Changes", ["Status", "Mod", "Version"], changes_data)
+        # Mod changes table display removed - statistics available in final summary
 
         if sync_stats.has_changes:
             self.logger.success(
