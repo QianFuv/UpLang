@@ -140,3 +140,40 @@ class TestSyncStats:
 
         assert not stats_no_changes.has_changes
         assert stats_with_changes.has_changes
+
+    def test_sync_stats_enhanced_features(self):
+        """Test enhanced SyncStats features."""
+        stats = SyncStats()
+
+        # Test mod change tracking
+        stats.add_mod_change("test_mod_1", is_new_file=True)
+        stats.add_mod_change("test_mod_2", is_new_file=False)
+        stats.add_mod_change("test_mod_1", is_new_file=False)  # Should not duplicate mod
+
+        assert stats.total_mods_affected == 2
+        assert "test_mod_1" in stats.mods_with_changes
+        assert "test_mod_2" in stats.mods_with_changes
+        assert stats.new_mod_files == 1
+        assert stats.updated_mod_files == 2
+
+    def test_sync_stats_merge(self):
+        """Test merging SyncStats instances."""
+        stats1 = SyncStats(keys_added=5, keys_removed=2, files_processed=3)
+        stats1.add_mod_change("mod1", is_new_file=True)
+        stats1.add_mod_change("mod2", is_new_file=False)
+
+        stats2 = SyncStats(keys_added=3, keys_removed=1, files_processed=2)
+        stats2.add_mod_change("mod3", is_new_file=True)
+        stats2.add_mod_change("mod1", is_new_file=False)  # Same mod as stats1
+
+        stats1.merge(stats2)
+
+        assert stats1.keys_added == 8
+        assert stats1.keys_removed == 3
+        assert stats1.files_processed == 5
+        assert stats1.total_mods_affected == 3
+        assert "mod1" in stats1.mods_with_changes
+        assert "mod2" in stats1.mods_with_changes
+        assert "mod3" in stats1.mods_with_changes
+        assert stats1.new_mod_files == 2
+        assert stats1.updated_mod_files == 2

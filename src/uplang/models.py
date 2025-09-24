@@ -91,6 +91,11 @@ class SyncStats:
     files_skipped: int = 0  # Number of files skipped
     errors: int = 0  # Number of errors encountered
 
+    # Enhanced statistics for better tracking
+    mods_with_changes: Set[str] = field(default_factory=set)  # Mod IDs with key changes
+    new_mod_files: int = 0  # New language files created
+    updated_mod_files: int = 0  # Existing language files updated
+
     @property
     def total_changes(self) -> int:
         """Get total number of key changes."""
@@ -100,3 +105,36 @@ class SyncStats:
     def has_changes(self) -> bool:
         """Check if there were any synchronization changes."""
         return self.total_changes > 0
+
+    @property
+    def total_mods_affected(self) -> int:
+        """Get total number of mods with changes."""
+        return len(self.mods_with_changes)
+
+    def add_mod_change(self, mod_id: str, is_new_file: bool = False):
+        """Track a mod that had changes.
+
+        Args:
+            mod_id: The mod identifier that had changes
+            is_new_file: Whether this was a new language file
+        """
+        self.mods_with_changes.add(mod_id)
+        if is_new_file:
+            self.new_mod_files += 1
+        else:
+            self.updated_mod_files += 1
+
+    def merge(self, other: 'SyncStats'):
+        """Merge another SyncStats into this one.
+
+        Args:
+            other: Another SyncStats instance to merge
+        """
+        self.keys_added += other.keys_added
+        self.keys_removed += other.keys_removed
+        self.files_processed += other.files_processed
+        self.files_skipped += other.files_skipped
+        self.errors += other.errors
+        self.mods_with_changes.update(other.mods_with_changes)
+        self.new_mod_files += other.new_mod_files
+        self.updated_mod_files += other.updated_mod_files

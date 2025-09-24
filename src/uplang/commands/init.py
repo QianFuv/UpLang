@@ -189,7 +189,7 @@ class InitCommand(BaseCommand):
                 with open(zh_cn_path, 'wb') as f:
                     f.write(content)
 
-        synchronizer.synchronize_file(zh_cn_path, en_us_path)
+        synchronizer.synchronize_file(zh_cn_path, en_us_path, mod_id=mod.mod_id)
         return True
 
     def _cleanup_old_lang_files(self, target_dir: Path):

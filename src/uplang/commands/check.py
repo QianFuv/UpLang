@@ -54,6 +54,8 @@ class CheckCommand(BaseCommand):
             sync_stats = self._synchronize_all_files(current_mods, synchronizer)
 
             self.logger.subsection("Saving state")
+            self._display_detailed_statistics(comparison, sync_stats, current_mods)
+
             state_manager.save_state(
                 current_mods,
                 self.config.state_file,
@@ -174,7 +176,7 @@ class CheckCommand(BaseCommand):
                 self.logger.debug(f"Found Chinese translations in {mod.display_name}")
 
         # Synchronize with Chinese translations if available
-        synchronizer.synchronize_file(zh_cn_path, en_us_path, zh_translations)
+        synchronizer.synchronize_file(zh_cn_path, en_us_path, zh_translations, mod_id=mod.mod_id)
         self.logger.debug(f"Updated mod: {mod.display_name}")
 
     def _synchronize_all_files(self, mods, synchronizer):
@@ -198,9 +200,56 @@ class CheckCommand(BaseCommand):
                 if not mod.has_lang_files:
                     mod.has_lang_files = True
                     mod.lang_files["en_us"] = f"assets/{mod.mod_id}/lang/en_us.json"
-                file_pairs.append((zh_cn_path, en_us_path))
+                file_pairs.append((zh_cn_path, en_us_path, mod.mod_id))
 
         return synchronizer.synchronize_multiple(file_pairs)
+
+    def _display_detailed_statistics(self, comparison, sync_stats, current_mods):
+        """Display detailed statistics before saving state.
+
+        Args:
+            comparison: ModComparisonResult with change details
+            sync_stats: SyncStats with synchronization statistics
+            current_mods: List of all current mods
+        """
+        # Display mod change statistics
+        if comparison.has_changes:
+            self.logger.info(f"Mod Changes:")
+            if comparison.new_mods:
+                self.logger.info(f"  • New mods: {len(comparison.new_mods)}")
+            if comparison.updated_mods:
+                self.logger.info(f"  • Updated mods: {len(comparison.updated_mods)}")
+            if comparison.deleted_mods:
+                self.logger.info(f"  • Deleted mods: {len(comparison.deleted_mods)}")
+        else:
+            self.logger.info("No mod changes detected")
+
+        # Display key synchronization statistics
+        if sync_stats.has_changes:
+            self.logger.info(f"Language Key Changes:")
+            self.logger.info(f"  • Keys added: {sync_stats.keys_added}")
+            if sync_stats.keys_removed > 0:
+                self.logger.info(f"  • Keys removed: {sync_stats.keys_removed}")
+            self.logger.info(f"  • Mods affected: {sync_stats.total_mods_affected}")
+            if sync_stats.new_mod_files > 0:
+                self.logger.info(f"  • New language files: {sync_stats.new_mod_files}")
+            if sync_stats.updated_mod_files > 0:
+                self.logger.info(f"  • Updated language files: {sync_stats.updated_mod_files}")
+        else:
+            self.logger.info("No language key changes")
+
+        # Display processing statistics
+        self.logger.info(f"Processing Summary:")
+        self.logger.info(f"  • Files processed: {sync_stats.files_processed}")
+        if sync_stats.files_skipped > 0:
+            self.logger.info(f"  • Files skipped: {sync_stats.files_skipped}")
+        if sync_stats.errors > 0:
+            self.logger.warning(f"  • Errors encountered: {sync_stats.errors}")
+
+        # Display total mod count
+        total_mods = len(current_mods)
+        mods_with_lang = len([mod for mod in current_mods if mod.has_lang_files])
+        self.logger.info(f"  • Total mods: {total_mods} ({mods_with_lang} with language files)")
 
     def _report_results(self, comparison, sync_stats, current_mods):
         """Report check results including changes and statistics.

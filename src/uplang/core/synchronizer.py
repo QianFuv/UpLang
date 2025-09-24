@@ -7,7 +7,7 @@ language files, maintaining translation integrity and key ordering.
 
 from collections import OrderedDict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from rich.progress import Progress, BarColumn, TextColumn, TaskProgressColumn
 
@@ -23,7 +23,7 @@ class LanguageSynchronizer:
         """Initialize LanguageSynchronizer with logger."""
         self.logger = logger
 
-    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Dict[str, str] | None = None) -> SyncStats:
+    def synchronize_file(self, zh_cn_path: Path, en_us_path: Path, zh_translations: Optional[Dict[str, str]] = None, mod_id: Optional[str] = None) -> SyncStats:
         """Synchronize a Chinese language file with its English counterpart.
 
         This method ensures that the Chinese file contains all keys from the English file
@@ -33,6 +33,7 @@ class LanguageSynchronizer:
             zh_cn_path: Path to Chinese language file
             en_us_path: Path to English language file
             zh_translations: Optional dict of Chinese translations for new keys
+            mod_id: Optional mod identifier for enhanced statistics
 
         Returns:
             SyncStats object containing synchronization statistics
@@ -61,6 +62,9 @@ class LanguageSynchronizer:
             keys_to_add = {key: value for key, value in en_data.items() if key not in zh_data}
             keys_to_remove = {key for key in zh_data if key not in en_data}
 
+            # Determine if this is a new file (Chinese file doesn't exist)
+            is_new_file = not zh_cn_path.exists()
+
             if keys_to_add or keys_to_remove:
                 # Create a new OrderedDict to maintain the order from en_data first
                 new_zh_data = OrderedDict()
@@ -87,6 +91,10 @@ class LanguageSynchronizer:
                 write_json_safe(zh_cn_path, zh_data, self.logger)
                 self.logger.debug(f"Synchronized {zh_cn_path}: +{stats.keys_added} -{stats.keys_removed}")
 
+                # Track mod changes if mod_id provided and there were changes
+                if mod_id and (stats.keys_added > 0 or stats.keys_removed > 0):
+                    stats.add_mod_change(mod_id, is_new_file)
+
             stats.files_processed += 1
             return stats
 
@@ -99,7 +107,7 @@ class LanguageSynchronizer:
         """Synchronize multiple language file pairs with progress tracking.
 
         Args:
-            file_pairs: List of tuples containing (zh_cn_path, en_us_path)
+            file_pairs: List of tuples containing (zh_cn_path, en_us_path) or (zh_cn_path, en_us_path, mod_id)
 
         Returns:
             Aggregated SyncStats for all processed files
@@ -118,13 +126,16 @@ class LanguageSynchronizer:
         ) as progress:
             task = progress.add_task("Synchronizing files...", total=len(file_pairs))
 
-            for zh_path, en_path in file_pairs:
-                stats = self.synchronize_file(Path(zh_path), Path(en_path))
-                total_stats.keys_added += stats.keys_added
-                total_stats.keys_removed += stats.keys_removed
-                total_stats.files_processed += stats.files_processed
-                total_stats.files_skipped += stats.files_skipped
-                total_stats.errors += stats.errors
+            for file_pair in file_pairs:
+                # Support both (zh_path, en_path) and (zh_path, en_path, mod_id) formats
+                if len(file_pair) == 3:
+                    zh_path, en_path, mod_id = file_pair
+                else:
+                    zh_path, en_path = file_pair
+                    mod_id = None
+
+                stats = self.synchronize_file(Path(zh_path), Path(en_path), mod_id=mod_id)
+                total_stats.merge(stats)
 
                 progress.advance(task)
 
@@ -141,4 +152,4 @@ def synchronize_language_file(zh_cn_path: str, en_us_path: str):
     """
     from uplang.logger import get_logger
     synchronizer = LanguageSynchronizer(get_logger())
-    synchronizer.synchronize_file(Path(zh_cn_path), Path(en_us_path))
+    synchronizer.synchronize_file(Path(zh_cn_path), Path(en_us_path), mod_id=None)
