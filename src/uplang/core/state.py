@@ -69,7 +69,7 @@ class StateManager:
             return None
 
     def compare_mods(self, current_mods: List[Mod], previous_state: Dict[str, Any]) -> ModComparisonResult:
-        """Compare current mods with previous state"""
+        """Compare current mods with previous state based on file hash changes"""
         result = ModComparisonResult()
 
         old_mods_map = previous_state.get("mods_map", {})
@@ -78,24 +78,32 @@ class StateManager:
         old_mod_ids = set(old_mods_map.keys())
         current_mod_ids = set(current_mods_map.keys())
 
+        # Step 1: Identify new mods (exist in current but not in previous)
         for mod_id in current_mod_ids - old_mod_ids:
             mod = current_mods_map[mod_id]
             mod.status = ModStatus.NEW
             result.new_mods.add(mod)
 
+        # Step 2: Identify deleted mods (exist in previous but not in current)
         for mod_id in old_mod_ids - current_mod_ids:
             old_mod_data = old_mods_map[mod_id]
             deleted_mod = self._create_mod_from_data(old_mod_data)
             deleted_mod.status = ModStatus.DELETED
             result.deleted_mods.add(deleted_mod)
 
+        # Step 3: Check existing mods for updates based on file hash changes
         for mod_id in old_mod_ids.intersection(current_mod_ids):
             current_mod = current_mods_map[mod_id]
             old_mod_data = old_mods_map[mod_id]
 
-            if old_mod_data.get("version") != current_mod.version:
+            # Compare file hash to detect any changes to the mod file
+            old_hash = old_mod_data.get("file_hash")
+            current_hash = current_mod.file_hash
+
+            if old_hash != current_hash:
                 current_mod.status = ModStatus.UPDATED
                 result.updated_mods.add(current_mod)
+                self.logger.debug(f"Mod {mod_id} updated: hash changed from {old_hash} to {current_hash}")
             else:
                 current_mod.status = ModStatus.UNCHANGED
                 result.unchanged_mods.add(current_mod)
