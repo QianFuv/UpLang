@@ -24,4 +24,4 @@ def calculate_dict_hash(data: dict[str, Any]) -> str:
     Calculate SHA256 hash of a dictionary.
     """
     json_str = json.dumps(data, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
+    return hashlib.sha256(json_str.encode("utf-8", errors="surrogatepass")).hexdigest()

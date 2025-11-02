@@ -2,6 +2,7 @@
 JSON file handler with format preservation.
 """
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,35 @@ class JSONHandler:
         self.yaml.map_indent = 2
         self.yaml.sequence_indent = 2
         self.yaml.default_flow_style = False
+        self.yaml.allow_duplicate_keys = True
+
+    def _strip_comments(self, text: str) -> str:
+        """
+        Remove single-line and multi-line comments from JSON text.
+        """
+        text = text.replace('\t', ' ')
+        text = text.lstrip()
+
+        lines = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("//"):
+                continue
+            comment_pos = line.find("//")
+            if comment_pos > 0:
+                before_comment = line[:comment_pos].rstrip()
+                if before_comment and not before_comment.endswith(","):
+                    if lines and lines[-1].rstrip().endswith(":"):
+                        line = before_comment
+                    else:
+                        continue
+                else:
+                    line = before_comment
+            lines.append(line)
+
+        result = "\n".join(lines)
+        result = re.sub(r'/\*.*?\*/', '', result, flags=re.DOTALL)
+        return result
 
     def load(self, file_path: Path) -> dict[str, Any]:
         """
@@ -37,7 +67,9 @@ class JSONHandler:
         for encoding in encodings:
             try:
                 with open(file_path, "r", encoding=encoding) as f:
-                    data = self.yaml.load(f)
+                    text = f.read()
+                    text = self._strip_comments(text)
+                    data = self.yaml.load(text)
                     if data is None:
                         return {}
                     if not isinstance(data, dict):
@@ -70,6 +102,7 @@ class JSONHandler:
         for encoding in encodings:
             try:
                 text = content.decode(encoding)
+                text = self._strip_comments(text)
                 data = self.yaml.load(text)
                 if data is None:
                     return {}

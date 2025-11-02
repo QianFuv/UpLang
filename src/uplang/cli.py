@@ -341,14 +341,25 @@ def stats(resourcepack_dir: str):
     total_keys_en = 0
     total_keys_zh = 0
     total_translated = 0
+    failed_files = []
 
     for mod_dir in assets_path.iterdir():
         if not mod_dir.is_dir():
             continue
 
         mod_id = mod_dir.name
-        en_file = extractor.load_from_resource_pack(rp_path, mod_id, "en_us")
-        zh_file = extractor.load_from_resource_pack(rp_path, mod_id, "zh_cn")
+
+        try:
+            en_file = extractor.load_from_resource_pack(rp_path, mod_id, "en_us")
+        except Exception as e:
+            failed_files.append((mod_id, "en_us", str(e)))
+            en_file = None
+
+        try:
+            zh_file = extractor.load_from_resource_pack(rp_path, mod_id, "zh_cn")
+        except Exception as e:
+            failed_files.append((mod_id, "zh_cn", str(e)))
+            zh_file = None
 
         if en_file is None:
             continue
@@ -370,6 +381,11 @@ def stats(resourcepack_dir: str):
     if total_keys_en > 0:
         percentage = (total_translated / total_keys_en) * 100
         print_success(f"Translation coverage: {percentage:.1f}%")
+
+    if failed_files:
+        print_warning(f"\nFailed to parse {len(failed_files)} file(s):")
+        for mod_id, lang_code, error_msg in failed_files:
+            print_error(f"  - {mod_id}/{lang_code}: {error_msg.split('(')[0].strip()}")
 
 
 @main.group()
