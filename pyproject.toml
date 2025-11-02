@@ -1,28 +1,14 @@
 [project]
 name = "uplang"
-version = "0.2.7"
+version = "0.3.0"
 description = "A command-line tool to streamline the process of updating language files for Minecraft Java Edition modpacks."
 readme = "README.md"
 authors = [
     { name = "QianFuv", email = "qianfuv@qq.com" }
 ]
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
-dependencies = [
-    "click>=8.1.7",
-    "rich>=13.7.0",
-    "typer>=0.9.0",
-]
-
-[project.scripts]
-uplang = "uplang.cli:cli"
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.2.2",
-    "pytest-cov>=4.0.0",
-    "pytest-mock>=3.12.0",
-]
+requires-python = ">=3.13"
+dependencies = []
 
 [project.urls]
 Repository = "https://github.com/QianFuv/UpLang"
@@ -30,14 +16,3 @@ Repository = "https://github.com/QianFuv/UpLang"
 [build-system]
 requires = ["uv_build>=0.8.5,<0.9.0"]
 build-backend = "uv_build"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = ["-v", "--tb=short"]
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
-]

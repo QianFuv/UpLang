@@ -1,7 +1,3 @@
 __pycache__
-/.*_cache
 /.claude
-/.vscode
-/tests/mock_mods
-/tests/mock_resource_pack
 /CLAUDE.md
