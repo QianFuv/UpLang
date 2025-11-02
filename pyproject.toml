@@ -43,6 +43,12 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
+[tool.coverage.run]
+omit = [
+    "src/uplang/cli.py",
+    "src/uplang/__main__.py",
+]
+
 [build-system]
 requires = ["uv_build>=0.8.5,<0.9.0"]
 build-backend = "uv_build"
