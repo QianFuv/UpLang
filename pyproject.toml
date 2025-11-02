@@ -1,6 +1,6 @@
 [project]
 name = "uplang"
-version = "0.3.0"
+version = "0.3.1"
 description = "A command-line tool to streamline the process of updating language files for Minecraft Java Edition modpacks."
 readme = "README.md"
 authors = [
