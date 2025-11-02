@@ -339,3 +339,69 @@ def test_apply_changes_removes_deleted_keys(synchronizer):
 
     assert "key1" in result
     assert "key2" not in result
+
+
+def test_synchronize_chinese_removes_orphaned_keys(synchronizer):
+    """
+    Test that Chinese sync removes keys that exist in zh_cn but not in en_us.
+    This is the bug fix for keys that exist in Chinese files but not in English files.
+    """
+    mod_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2"},
+        content_hash="hash1",
+    )
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1", "key2": "值2", "orphaned_key": "孤立键"},
+        content_hash="hash2",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "已翻译1", "key2": "已翻译2", "orphaned_key": "孤立键"},
+        content_hash="hash3",
+    )
+    diff = DiffResult(unchanged={"key1", "key2"})
+
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+
+    assert "key1" in result_file.content
+    assert "key2" in result_file.content
+    assert "orphaned_key" not in result_file.content
+    assert len(result_file.content) == 2
+
+
+def test_synchronize_chinese_adds_missing_keys(synchronizer):
+    """
+    Test that Chinese sync adds keys that exist in en_us but not in rp_zh.
+    If mod_zh has the key, use it; otherwise use English fallback.
+    """
+    mod_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2", "key3": "value3"},
+        content_hash="hash1",
+    )
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1", "key2": "值2"},
+        content_hash="hash2",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "已翻译1"},
+        content_hash="hash3",
+    )
+    diff = DiffResult(unchanged={"key1", "key2", "key3"})
+
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+
+    assert result_file.content["key1"] == "已翻译1"
+    assert result_file.content["key2"] == "值2"
+    assert result_file.content["key3"] == "value3"
+    assert len(result_file.content) == 3

@@ -439,17 +439,23 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force):
         rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
 
         synced_en, diff = synchronizer.synchronize_english(mod_en, rp_en)
+        synced_zh = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+
+        zh_added_keys = 0
+        zh_deleted_keys = 0
+        if rp_zh is not None:
+            zh_added_keys = len(set(synced_zh.content.keys()) - set(rp_zh.content.keys()))
+            zh_deleted_keys = len(set(rp_zh.content.keys()) - set(synced_zh.content.keys()))
 
         if not diff.has_changes and rp_en is not None:
-            cache.update_mod(
-                mod.mod_id,
-                mod.jar_path.name,
-                mod_en.content_hash,
-                mod_zh.content_hash if mod_zh else None,
-            )
-            return SyncResult(mod_id=mod.mod_id, skipped=True)
-
-        synced_zh = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+            if rp_zh is None or synced_zh.content == rp_zh.content:
+                cache.update_mod(
+                    mod.mod_id,
+                    mod.jar_path.name,
+                    mod_en.content_hash,
+                    mod_zh.content_hash if mod_zh else None,
+                )
+                return SyncResult(mod_id=mod.mod_id, skipped=True)
 
         if not dry_run:
             extractor.save_to_resource_pack(rp_path, synced_en)
@@ -462,13 +468,16 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force):
                 mod_zh.content_hash if mod_zh else None,
             )
 
+        total_added = len(diff.added) + zh_added_keys
+        total_deleted = len(diff.deleted) + zh_deleted_keys
+
         return SyncResult(
             mod_id=mod.mod_id,
             success=True,
             skipped=False,
-            added_keys=len(diff.added),
+            added_keys=total_added,
             modified_keys=len(diff.modified),
-            deleted_keys=len(diff.deleted),
+            deleted_keys=total_deleted,
         )
 
     except Exception as e:

@@ -68,18 +68,15 @@ class LanguageSynchronizer:
 
         changed_keys = diff.added | diff.modified
 
-        for key in rp_zh_content.keys():
-            if key not in diff.deleted:
-                if key in changed_keys:
-                    if mod_zh and key in mod_zh.content:
-                        result_content[key] = mod_zh.content[key]
-                    else:
-                        result_content[key] = mod_en.content[key]
+        for key in mod_en.content.keys():
+            if key in changed_keys:
+                if mod_zh and key in mod_zh.content:
+                    result_content[key] = mod_zh.content[key]
                 else:
-                    result_content[key] = rp_zh_content[key]
-
-        for key in diff.added:
-            if key not in result_content:
+                    result_content[key] = mod_en.content[key]
+            elif key in rp_zh_content:
+                result_content[key] = rp_zh_content[key]
+            else:
                 if mod_zh and key in mod_zh.content:
                     result_content[key] = mod_zh.content[key]
                 else:
