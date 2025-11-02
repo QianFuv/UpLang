@@ -2,7 +2,9 @@
 Command-line interface for UpLang.
 """
 
+import builtins
 import logging
+import shutil
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -36,7 +38,7 @@ from uplang.utils.output import (
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.option("--quiet", "-q", is_flag=True, help="Quiet mode (errors only)")
 @click.option("--no-color", is_flag=True, help="Disable colored output")
-@click.option("--log-file", type=click.Path(), help="Log file path")
+@click.option("--log-file", type=click.Path(path_type=str), help="Log file path")
 @click.pass_context
 def main(ctx: click.Context, verbose: bool, quiet: bool, no_color: bool, log_file: str | None):
     """
@@ -60,8 +62,8 @@ def main(ctx: click.Context, verbose: bool, quiet: bool, no_color: bool, log_fil
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False))
-@click.argument("resourcepack_dir", type=click.Path(file_okay=False))
+@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument("resourcepack_dir", type=click.Path(file_okay=False, path_type=str))
 @click.option("--dry-run", is_flag=True, help="Simulate without modifying files")
 @click.option("--force", is_flag=True, help="Ignore cache, process all mods")
 @click.option("--parallel", "-p", default=4, help="Number of parallel workers")
@@ -127,8 +129,8 @@ def sync(mods_dir: str, resourcepack_dir: str, dry_run: bool, force: bool, paral
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False))
-@click.argument("resourcepack_dir", type=click.Path(file_okay=False))
+@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument("resourcepack_dir", type=click.Path(file_okay=False, path_type=str))
 def check(mods_dir: str, resourcepack_dir: str):
     """
     Check differences without synchronizing (dry-run mode).
@@ -138,7 +140,7 @@ def check(mods_dir: str, resourcepack_dir: str):
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False))
+@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
 def list(mods_dir: str):
     """
     List all mods and their language files.
@@ -169,8 +171,8 @@ def list(mods_dir: str):
 
 
 @main.command()
-@click.argument("mod_jar", type=click.Path(exists=True, dir_okay=False))
-@click.argument("output_dir", type=click.Path(file_okay=False))
+@click.argument("mod_jar", type=click.Path(exists=True, dir_okay=False, path_type=str))
+@click.argument("output_dir", type=click.Path(file_okay=False, path_type=str))
 def extract(mod_jar: str, output_dir: str):
     """
     Extract language files from a single mod JAR.
@@ -201,8 +203,8 @@ def extract(mod_jar: str, output_dir: str):
 
 
 @main.command()
-@click.argument("mod_jar", type=click.Path(exists=True, dir_okay=False))
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False))
+@click.argument("mod_jar", type=click.Path(exists=True, dir_okay=False, path_type=str))
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
 def diff(mod_jar: str, resourcepack_dir: str):
     """
     Show detailed differences for a single mod.
@@ -256,8 +258,10 @@ def diff(mod_jar: str, resourcepack_dir: str):
 
 
 @main.command()
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False))
-def clean(resourcepack_dir: str):
+@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.option("--yes", "-y", is_flag=True, help="Skip confirmation and delete all orphaned mods")
+def clean(mods_dir: str, resourcepack_dir: str, yes: bool):
     """
     Remove language files for mods that no longer exist.
     """
@@ -269,14 +273,58 @@ def clean(resourcepack_dir: str):
         return
 
     print_info(f"Scanning {assets_path}...")
-    mod_dirs = [d for d in assets_path.iterdir() if d.is_dir()]
+    rp_mod_ids = {d.name for d in assets_path.iterdir() if d.is_dir()}
+    print_info(f"Found {len(rp_mod_ids)} mod directories in resource pack")
 
-    print_info(f"Found {len(mod_dirs)} mod directories")
-    print_warning("This command requires manual confirmation (not yet implemented)")
+    mods_path = Path(mods_dir)
+    print_info(f"\nScanning {mods_path}...")
+    scanner = ModScanner()
+    current_mods = scanner.scan_directory(mods_path)
+    current_mod_ids = {mod.mod_id for mod in current_mods}
+    print_info(f"Found {len(current_mods)} mods in mods directory")
+
+    orphaned_mod_ids = rp_mod_ids - current_mod_ids
+
+    if not orphaned_mod_ids:
+        print_success("No orphaned mods found. Resource pack is clean!")
+        return
+
+    print_warning(f"\nFound {len(orphaned_mod_ids)} orphaned mod(s):")
+    for mod_id in sorted(orphaned_mod_ids):
+        mod_path = assets_path / mod_id
+        lang_path = mod_path / "lang"
+        if lang_path.exists():
+            lang_files = builtins.list(lang_path.glob("*.json"))
+            print_info(f"  - {mod_id} ({len(lang_files)} language files)")
+        else:
+            print_info(f"  - {mod_id}")
+
+    if not yes:
+        print_warning("\nThis will permanently delete the directories listed above.")
+        confirmation = click.confirm("Do you want to continue?", default=False)
+        if not confirmation:
+            print_info("Cancelled.")
+            return
+
+    cache = CacheManager(rp_path / ".uplang_cache.json")
+    deleted_count = 0
+
+    for mod_id in orphaned_mod_ids:
+        mod_path = assets_path / mod_id
+        try:
+            shutil.rmtree(mod_path)
+            cache.remove_mod(mod_id)
+            print_success(f"Deleted: {mod_id}")
+            deleted_count += 1
+        except Exception as e:
+            print_error(f"Failed to delete {mod_id}: {e}")
+
+    cache.save()
+    print_success(f"\nCleaned {deleted_count} orphaned mod(s)")
 
 
 @main.command()
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False))
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
 def stats(resourcepack_dir: str):
     """
     Show translation statistics.
@@ -333,7 +381,7 @@ def cache():
 
 
 @cache.command("clear")
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False))
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
 def cache_clear(resourcepack_dir: str):
     """
     Clear the cache to force full synchronization.
