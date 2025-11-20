@@ -20,7 +20,7 @@ from uplang.core import (
     ModScanner,
 )
 from uplang.exceptions import UpLangError
-from uplang.models import SyncResult
+from uplang.models import LanguageFile, SyncResult
 from uplang.utils.output import (
     print_error,
     print_info,
@@ -388,6 +388,146 @@ def stats(resourcepack_dir: str):
             print_error(f"  - {mod_id}/{lang_code}: {error_msg.split('(')[0].strip()}")
 
 
+@main.command()
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.option("--dry-run", is_flag=True, help="Check without modifying files")
+@click.option("--check", is_flag=True, help="Only check for issues, do not fix")
+def format(resourcepack_dir: str, dry_run: bool, check: bool):
+    """
+    Fix JSON format and synchronize key order with English files.
+    """
+    rp_path = Path(resourcepack_dir)
+    assets_path = rp_path / "assets"
+
+    if not assets_path.exists():
+        print_warning("No assets directory found")
+        return
+
+    if dry_run or check:
+        print_warning("CHECK MODE - No files will be modified")
+
+    extractor = LanguageExtractor()
+    synchronizer = LanguageSynchronizer()
+
+    total_mods = 0
+    fixed_mods = 0
+    total_reordered = 0
+    total_reformatted = 0
+    issues_found = []
+
+    print_info(f"Scanning {assets_path}...")
+
+    for mod_dir in assets_path.iterdir():
+        if not mod_dir.is_dir():
+            continue
+
+        mod_id = mod_dir.name
+        total_mods += 1
+
+        try:
+            en_file = extractor.load_from_resource_pack(rp_path, mod_id, "en_us")
+        except Exception as e:
+            issues_found.append((mod_id, "en_us", f"Failed to load: {e}"))
+            continue
+
+        if en_file is None:
+            continue
+
+        try:
+            zh_file = extractor.load_from_resource_pack(rp_path, mod_id, "zh_cn")
+        except Exception as e:
+            issues_found.append((mod_id, "zh_cn", f"Failed to load: {e}"))
+            zh_file = None
+
+        mod_fixed = False
+        from uplang.utils import calculate_dict_hash
+        import json
+
+        def needs_formatting(file_path, content):
+            """
+            Check if file needs formatting by comparing current content with formatted version.
+            """
+            try:
+                if not file_path.exists():
+                    return True
+                with open(file_path, "r", encoding="utf-8", errors="surrogatepass") as f:
+                    current_text = f.read()
+                formatted_text = json.dumps(content, ensure_ascii=False, indent=2) + "\n"
+                return current_text != formatted_text
+            except Exception:
+                return True
+
+        if zh_file:
+            original_order = builtins.list(zh_file.content.keys())
+            reordered_content = synchronizer.reorder_by_reference(
+                zh_file.content, en_file.content
+            )
+            new_order = builtins.list(reordered_content.keys())
+
+            if original_order != new_order:
+                print_verbose(f"  {mod_id}: Key order needs synchronization")
+                total_reordered += 1
+
+            zh_file_path = rp_path / "assets" / mod_id / "lang" / "zh_cn.json"
+            if needs_formatting(zh_file_path, reordered_content):
+                total_reformatted += 1
+                mod_fixed = True
+
+                if not dry_run and not check:
+                    zh_file_reordered = LanguageFile(
+                        mod_id=mod_id,
+                        lang_code="zh_cn",
+                        content=reordered_content,
+                        content_hash=calculate_dict_hash(reordered_content),
+                    )
+                    try:
+                        extractor.save_to_resource_pack(rp_path, zh_file_reordered)
+                    except Exception as e:
+                        issues_found.append((mod_id, "zh_cn", f"Failed to save: {e}"))
+
+        en_file_path = rp_path / "assets" / mod_id / "lang" / "en_us.json"
+        if needs_formatting(en_file_path, en_file.content):
+            total_reformatted += 1
+            mod_fixed = True
+
+            if not dry_run and not check:
+                try:
+                    en_file_reformatted = LanguageFile(
+                        mod_id=mod_id,
+                        lang_code="en_us",
+                        content=en_file.content,
+                        content_hash=calculate_dict_hash(en_file.content),
+                    )
+                    extractor.save_to_resource_pack(rp_path, en_file_reformatted)
+                except Exception as e:
+                    issues_found.append((mod_id, "en_us", f"Failed to save: {e}"))
+
+        if mod_fixed:
+            fixed_mods += 1
+            if not dry_run and not check:
+                print_success(f"Fixed: {mod_id}")
+
+    print_info("\n" + "=" * 50)
+    print_info("Format Summary")
+    print_info("=" * 50)
+    print_info(f"Total mods scanned: {total_mods}")
+
+    if dry_run or check:
+        print_warning(f"Mods needing fixes: {fixed_mods}")
+        print_info(f"  Files needing key order sync: {total_reordered}")
+    else:
+        print_success(f"Mods fixed: {fixed_mods}")
+        print_info(f"  Files reformatted: {total_reformatted}")
+        print_info(f"  Chinese files reordered: {total_reordered}")
+
+    if issues_found:
+        print_warning(f"\nIssues found ({len(issues_found)}):")
+        for mod_id, lang_code, issue in issues_found:
+            print_error(f"  {mod_id}/{lang_code}: {issue}")
+
+    print_info("=" * 50)
+
+
 @main.group()
 def cache():
     """
@@ -422,63 +562,106 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force):
 
         mod_langs = extractor.extract_language_files(mod)
 
-        if "en_us" not in mod_langs:
-            return SyncResult(mod_id=mod.mod_id, skipped=True)
+        if "en_us" in mod_langs:
+            mod_en = mod_langs["en_us"]
+            mod_zh = mod_langs.get("zh_cn")
 
-        mod_en = mod_langs["en_us"]
-        mod_zh = mod_langs.get("zh_cn")
+            if not force and not cache.is_changed(
+                mod.mod_id,
+                mod_en.content_hash,
+                mod_zh.content_hash if mod_zh else None,
+            ):
+                return SyncResult(mod_id=mod.mod_id, skipped=True)
 
-        if not force and not cache.is_changed(
-            mod.mod_id,
-            mod_en.content_hash,
-            mod_zh.content_hash if mod_zh else None,
-        ):
-            return SyncResult(mod_id=mod.mod_id, skipped=True)
+            rp_en = extractor.load_from_resource_pack(rp_path, mod.mod_id, "en_us")
+            rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
 
-        rp_en = extractor.load_from_resource_pack(rp_path, mod.mod_id, "en_us")
-        rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
+            synced_en, diff = synchronizer.synchronize_english(mod_en, rp_en)
+            synced_zh = synchronizer.synchronize_chinese(synced_en, mod_zh, rp_en, rp_zh, diff)
 
-        synced_en, diff = synchronizer.synchronize_english(mod_en, rp_en)
-        synced_zh = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+            zh_added_keys = 0
+            zh_deleted_keys = 0
+            if rp_zh is not None:
+                zh_added_keys = len(set(synced_zh.content.keys()) - set(rp_zh.content.keys()))
+                zh_deleted_keys = len(set(rp_zh.content.keys()) - set(synced_zh.content.keys()))
 
-        zh_added_keys = 0
-        zh_deleted_keys = 0
-        if rp_zh is not None:
-            zh_added_keys = len(set(synced_zh.content.keys()) - set(rp_zh.content.keys()))
-            zh_deleted_keys = len(set(rp_zh.content.keys()) - set(synced_zh.content.keys()))
+            if not diff.has_changes and rp_en is not None:
+                if rp_zh is None or synced_zh.content == rp_zh.content:
+                    cache.update_mod(
+                        mod.mod_id,
+                        mod.jar_path.name,
+                        mod_en.content_hash,
+                        mod_zh.content_hash if mod_zh else None,
+                    )
+                    return SyncResult(mod_id=mod.mod_id, skipped=True)
 
-        if not diff.has_changes and rp_en is not None:
-            if rp_zh is None or synced_zh.content == rp_zh.content:
+            if not dry_run:
+                extractor.save_to_resource_pack(rp_path, synced_en)
+                extractor.save_to_resource_pack(rp_path, synced_zh)
+
                 cache.update_mod(
                     mod.mod_id,
                     mod.jar_path.name,
                     mod_en.content_hash,
                     mod_zh.content_hash if mod_zh else None,
                 )
-                return SyncResult(mod_id=mod.mod_id, skipped=True)
 
-        if not dry_run:
-            extractor.save_to_resource_pack(rp_path, synced_en)
-            extractor.save_to_resource_pack(rp_path, synced_zh)
+            total_added = len(diff.added) + zh_added_keys
+            total_deleted = len(diff.deleted) + zh_deleted_keys
 
-            cache.update_mod(
-                mod.mod_id,
-                mod.jar_path.name,
-                mod_en.content_hash,
-                mod_zh.content_hash if mod_zh else None,
+            return SyncResult(
+                mod_id=mod.mod_id,
+                success=True,
+                skipped=False,
+                added_keys=total_added,
+                modified_keys=len(diff.modified),
+                deleted_keys=total_deleted,
             )
 
-        total_added = len(diff.added) + zh_added_keys
-        total_deleted = len(diff.deleted) + zh_deleted_keys
+        elif "zh_cn" in mod_langs:
+            mod_zh = mod_langs["zh_cn"]
 
-        return SyncResult(
-            mod_id=mod.mod_id,
-            success=True,
-            skipped=False,
-            added_keys=total_added,
-            modified_keys=len(diff.modified),
-            deleted_keys=total_deleted,
-        )
+            if not force and not cache.is_changed(
+                mod.mod_id,
+                None,
+                mod_zh.content_hash,
+            ):
+                return SyncResult(mod_id=mod.mod_id, skipped=True)
+
+            rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
+
+            synced_zh, diff = synchronizer.synchronize_chinese_as_primary(mod_zh, rp_zh)
+
+            if not diff.has_changes and rp_zh is not None:
+                cache.update_mod(
+                    mod.mod_id,
+                    mod.jar_path.name,
+                    None,
+                    mod_zh.content_hash,
+                )
+                return SyncResult(mod_id=mod.mod_id, skipped=True)
+
+            if not dry_run:
+                extractor.save_to_resource_pack(rp_path, synced_zh)
+
+                cache.update_mod(
+                    mod.mod_id,
+                    mod.jar_path.name,
+                    None,
+                    mod_zh.content_hash,
+                )
+
+            return SyncResult(
+                mod_id=mod.mod_id,
+                success=True,
+                skipped=False,
+                added_keys=len(diff.added),
+                modified_keys=len(diff.modified),
+                deleted_keys=len(diff.deleted),
+            )
+
+        else:
+            return SyncResult(mod_id=mod.mod_id, skipped=True)
 
     except Exception as e:
         return SyncResult(mod_id=mod.mod_id, success=False, error=str(e))
