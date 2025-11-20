@@ -2,6 +2,7 @@
 JSON file handler with format preservation.
 """
 
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -24,12 +25,32 @@ class JSONHandler:
         self.yaml.default_flow_style = False
         self.yaml.allow_duplicate_keys = True
 
+    def _clean_control_chars(self, text: str) -> str:
+        """
+        Remove control characters that YAML parser cannot handle.
+        Filters out C0 (0x00-0x1F) and C1 (0x80-0x9F) control characters.
+        Preserves surrogate pairs for emoji support.
+        """
+        result = []
+        for char in text:
+            code = ord(char)
+            if code in (ord('\n'), ord('\r'), ord('\t')):
+                result.append(char)
+            elif 0xD800 <= code <= 0xDFFF:
+                result.append(char)
+            elif (0x20 <= code < 0x7F) or code >= 0xA0:
+                result.append(char)
+            else:
+                result.append(' ')
+        return ''.join(result)
+
     def _strip_comments(self, text: str) -> str:
         """
         Remove single-line and multi-line comments from JSON text.
         """
         text = text.replace('\t', ' ')
         text = text.lstrip()
+        text = self._clean_control_chars(text)
 
         lines = []
         for line in text.splitlines():
@@ -66,10 +87,16 @@ class JSONHandler:
 
         for encoding in encodings:
             try:
-                with open(file_path, "r", encoding=encoding) as f:
+                errors = "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
+                with open(file_path, "r", encoding=encoding, errors=errors) as f:
                     text = f.read()
                     text = self._strip_comments(text)
-                    data = self.yaml.load(text)
+
+                    try:
+                        data = json.loads(text)
+                    except json.JSONDecodeError:
+                        data = self.yaml.load(text)
+
                     if data is None:
                         return {}
                     if not isinstance(data, dict):
@@ -101,9 +128,15 @@ class JSONHandler:
 
         for encoding in encodings:
             try:
-                text = content.decode(encoding)
+                errors = "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
+                text = content.decode(encoding, errors=errors)
                 text = self._strip_comments(text)
-                data = self.yaml.load(text)
+
+                try:
+                    data = json.loads(text)
+                except json.JSONDecodeError:
+                    data = self.yaml.load(text)
+
                 if data is None:
                     return {}
                 if not isinstance(data, dict):
@@ -131,8 +164,12 @@ class JSONHandler:
         """
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(file_path, "w", encoding="utf-8", newline="\n") as f:
-                self.yaml.dump(data, f)
+            json_str = json.dumps(data, ensure_ascii=False, indent=2)
+            with open(
+                file_path, "w", encoding="utf-8", newline="\n", errors="surrogatepass"
+            ) as f:
+                f.write(json_str)
+                f.write("\n")
         except Exception as e:
             raise LanguageFileError(
                 f"Failed to write JSON file: {e}", context={"path": str(file_path)}

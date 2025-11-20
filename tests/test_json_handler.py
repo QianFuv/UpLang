@@ -263,19 +263,35 @@ def test_dump_write_failure(json_handler, tmp_path, monkeypatch):
     """
     Test that dump raises LanguageFileError on write failure.
     """
-    from ruamel.yaml import YAML
+    import json
 
-    def mock_dump_failure(data, stream):
+    def mock_dumps_failure(data, **kwargs):
         raise IOError("Permission denied")
 
     file_path = tmp_path / "output.json"
     data = {"key": "value"}
 
-    monkeypatch.setattr(YAML, "dump", mock_dump_failure)
+    monkeypatch.setattr(json, "dumps", mock_dumps_failure)
 
     with pytest.raises(LanguageFileError) as exc_info:
         json_handler.dump(data, file_path)
 
     assert "Failed to write JSON file" in str(exc_info.value)
+
+
+def test_dump_with_surrogate_pairs(json_handler, tmp_path):
+    """
+    Test dumping data containing surrogate pairs (corrupted Unicode).
+    """
+    file_path = tmp_path / "surrogate.json"
+    data = {"key": "value\udcff", "normal": "normal_value"}
+
+    json_handler.dump(data, file_path)
+
+    assert file_path.exists()
+    loaded_data = json_handler.load(file_path)
+    assert "key" in loaded_data
+    assert "normal" in loaded_data
+    assert loaded_data["normal"] == "normal_value"
 
 
