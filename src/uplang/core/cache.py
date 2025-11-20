@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from uplang import __version__
 from uplang.exceptions import CacheError
 from uplang.utils.output import print_verbose
 
@@ -16,7 +17,7 @@ class CacheManager:
     Manage hash-based cache for detecting mod changes.
     """
 
-    CACHE_VERSION = "0.3.0"
+    CACHE_VERSION = __version__
 
     def __init__(self, cache_path: Path):
         self.cache_path = cache_path
