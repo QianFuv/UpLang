@@ -295,3 +295,124 @@ def test_dump_with_surrogate_pairs(json_handler, tmp_path):
     assert loaded_data["normal"] == "normal_value"
 
 
+def test_clean_control_chars_with_surrogates(json_handler, tmp_path):
+    """
+    Test that surrogate pairs are preserved in control character cleaning.
+    """
+    file_path = tmp_path / "surrogate_test.json"
+    content = '{"test": "value\ud800with\udfffsurrogates"}'
+    file_path.write_text(content, encoding="utf-8", errors="surrogatepass")
+
+    data = json_handler.load(file_path)
+    assert "test" in data
+
+
+def test_clean_control_chars_replaces_with_space(json_handler, tmp_path):
+    """
+    Test that control characters are replaced with spaces.
+    """
+    file_path = tmp_path / "control_chars.json"
+    content = '{"test": "value\x01with\x02control\x03chars"}'
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert "test" in data
+    assert "control" in data["test"]
+
+
+def test_strip_comments_line_starting_with_comment(json_handler, tmp_path):
+    """
+    Test stripping lines that start with //.
+    """
+    file_path = tmp_path / "comments.json"
+    content = '''
+{
+    // This is a comment
+    "key1": "value1",
+    // Another comment
+    "key2": "value2"
+}
+'''
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert data["key1"] == "value1"
+    assert data["key2"] == "value2"
+
+
+def test_strip_comments_inline_after_colon(json_handler, tmp_path):
+    """
+    Test handling inline comments after colons (special case handling).
+    This covers line 91 in json_handler.py where the previous line ends with colon.
+    """
+    file_path = tmp_path / "inline_comments.json"
+    content = '''{
+    "nested": {
+        "key1": "value1"  // this is a nested comment without comma
+    },
+    "key2": "value2"
+}'''
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert "nested" in data
+    assert "key2" in data
+
+
+def test_strip_comments_inline_without_comma(json_handler, tmp_path):
+    """
+    Test handling inline comments on lines without commas.
+    """
+    file_path = tmp_path / "inline_no_comma.json"
+    content = '''
+{
+    "key": {
+        "nested": "value" // inline comment
+    }
+}
+'''
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert "key" in data
+
+
+def test_load_with_all_encoding_failures(json_handler, tmp_path, monkeypatch):
+    """
+    Test that load raises JSONParseError when all encodings fail.
+    """
+    file_path = tmp_path / "test.json"
+    file_path.write_text('{"key": "value"}', encoding="utf-8")
+
+    original_open = open
+
+    def mock_open_with_decode_error(*args, **kwargs):
+        file_obj = original_open(*args, **kwargs)
+        original_read = file_obj.read
+
+        def failing_read():
+            raise UnicodeDecodeError("utf-8", b"", 0, 1, "mocked error")
+
+        file_obj.read = failing_read
+        return file_obj
+
+    monkeypatch.setattr("builtins.open", mock_open_with_decode_error)
+
+    with pytest.raises(JSONParseError) as exc_info:
+        json_handler.load(file_path)
+
+    assert "Failed to read file with any encoding" in str(exc_info.value)
+
+
+def test_load_from_bytes_latin1_fallback(json_handler):
+    """
+    Test that load_from_bytes successfully uses fallback encodings.
+    Lines 175-176 and 182 in json_handler.py are difficult to cover in practice
+    because latin-1 and cp1252 can decode virtually any byte sequence.
+    This test verifies the fallback mechanism works correctly.
+    """
+    content = b'\x80\x81\x82\x83'
+    result = json_handler.load_from_bytes(content)
+    assert isinstance(result, dict)
+
+

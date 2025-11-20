@@ -634,3 +634,35 @@ def test_reorder_by_reference_preserves_values(synchronizer):
     assert result["a"] == "第一"
     assert result["m"] == "中间"
     assert result["extra"] == "额外"
+
+
+def test_synchronize_chinese_no_rp_en_with_missing_keys(synchronizer):
+    """
+    Test Chinese sync when rp_en is None and keys missing from rp_zh but present in mod_zh.
+    This covers line 74 in synchronizer.py.
+    """
+    mod_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2", "key3": "value3"},
+        content_hash="hash1",
+    )
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "模组值1", "key2": "模组值2", "key3": "模组值3"},
+        content_hash="hash2",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "资源包翻译1"},
+        content_hash="hash3",
+    )
+    diff = DiffResult(added={"key1", "key2", "key3"})
+
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, None, rp_zh, diff)
+
+    assert result_file.content["key1"] == "资源包翻译1"
+    assert result_file.content["key2"] == "模组值2"
+    assert result_file.content["key3"] == "模组值3"
