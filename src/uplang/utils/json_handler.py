@@ -12,6 +12,32 @@ from ruamel.yaml import YAML
 from uplang.exceptions import JSONParseError, LanguageFileError
 
 
+def _escape_pua_in_json_string(json_str: str) -> str:
+    """
+    Replace PUA, surrogate, and noncharacters with escape sequences.
+    Preserves other Unicode characters (Chinese, §, etc.) as UTF-8 bytes.
+
+    Escapes:
+    - Private Use Area (BMP): U+E000-U+F8FF
+    - Surrogates: U+D800-U+DFFF
+    - Noncharacters: U+FDD0-U+FDEF
+    - Plane-ending noncharacters: U+FFFE, U+FFFF
+
+    Uses uppercase hex to match JAR format.
+    """
+    result = []
+    for char in json_str:
+        code = ord(char)
+        if (0xE000 <= code <= 0xF8FF or
+            0xD800 <= code <= 0xDFFF or
+            0xFDD0 <= code <= 0xFDEF or
+            code in (0xFFFE, 0xFFFF)):
+            result.append(f"\\u{code:04X}")
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
 class JSONHandler:
     """
     Handle JSON files while preserving formatting and key order.
@@ -161,10 +187,13 @@ class JSONHandler:
     def dump(self, data: dict[str, Any], file_path: Path) -> None:
         """
         Save JSON file preserving order and format.
+        Uses ensure_ascii=False to keep Unicode (Chinese, §) as UTF-8,
+        but escapes PUA characters to match JAR format.
         """
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             json_str = json.dumps(data, ensure_ascii=False, indent=2)
+            json_str = _escape_pua_in_json_string(json_str)
             with open(
                 file_path, "w", encoding="utf-8", newline="\n", errors="surrogatepass"
             ) as f:
