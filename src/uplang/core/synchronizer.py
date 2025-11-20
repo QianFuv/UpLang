@@ -33,9 +33,7 @@ class LanguageSynchronizer:
 
         diff = self.comparator.compare(rp_en.content, mod_en.content)
 
-        result_content = self._apply_changes(
-            base=rp_en.content, source=mod_en.content, diff=diff
-        )
+        result_content = self._apply_changes(source=mod_en.content)
 
         from uplang.utils import calculate_dict_hash
 
@@ -53,6 +51,7 @@ class LanguageSynchronizer:
         self,
         mod_en: LanguageFile,
         mod_zh: LanguageFile | None,
+        rp_en: LanguageFile | None,
         rp_zh: LanguageFile | None,
         diff: DiffResult,
     ) -> LanguageFile:
@@ -66,21 +65,31 @@ class LanguageSynchronizer:
         else:
             rp_zh_content = rp_zh.content
 
-        changed_keys = diff.added | diff.modified
+        if rp_en is None and rp_zh is not None:
+            for key in mod_en.content.keys():
+                if key in rp_zh_content:
+                    result_content[key] = rp_zh_content[key]
+                else:
+                    if mod_zh and key in mod_zh.content:
+                        result_content[key] = mod_zh.content[key]
+                    else:
+                        result_content[key] = mod_en.content[key]
+        else:
+            changed_keys = diff.added | diff.modified
 
-        for key in mod_en.content.keys():
-            if key in changed_keys:
-                if mod_zh and key in mod_zh.content:
-                    result_content[key] = mod_zh.content[key]
+            for key in mod_en.content.keys():
+                if key in changed_keys:
+                    if mod_zh and key in mod_zh.content:
+                        result_content[key] = mod_zh.content[key]
+                    else:
+                        result_content[key] = mod_en.content[key]
+                elif key in rp_zh_content:
+                    result_content[key] = rp_zh_content[key]
                 else:
-                    result_content[key] = mod_en.content[key]
-            elif key in rp_zh_content:
-                result_content[key] = rp_zh_content[key]
-            else:
-                if mod_zh and key in mod_zh.content:
-                    result_content[key] = mod_zh.content[key]
-                else:
-                    result_content[key] = mod_en.content[key]
+                    if mod_zh and key in mod_zh.content:
+                        result_content[key] = mod_zh.content[key]
+                    else:
+                        result_content[key] = mod_en.content[key]
 
         from uplang.utils import calculate_dict_hash
 
@@ -91,20 +100,62 @@ class LanguageSynchronizer:
             content_hash=calculate_dict_hash(result_content),
         )
 
-    def _apply_changes(
-        self, base: dict, source: dict, diff: DiffResult
-    ) -> CommentedMap:
+    def synchronize_chinese_as_primary(
+        self, mod_zh: LanguageFile, rp_zh: LanguageFile | None
+    ) -> tuple[LanguageFile, DiffResult]:
         """
-        Apply changes to base dictionary while preserving key order.
+        Synchronize Chinese language file when it's the primary language.
+        """
+        if rp_zh is None:
+            diff = DiffResult(
+                added=set(mod_zh.content.keys()),
+                modified=set(),
+                deleted=set(),
+                unchanged=set(),
+            )
+            return mod_zh, diff
+
+        diff = self.comparator.compare(rp_zh.content, mod_zh.content)
+
+        result_content = self._apply_changes(source=mod_zh.content)
+
+        from uplang.utils import calculate_dict_hash
+
+        return (
+            LanguageFile(
+                mod_id=mod_zh.mod_id,
+                lang_code="zh_cn",
+                content=result_content,
+                content_hash=calculate_dict_hash(result_content),
+            ),
+            diff,
+        )
+
+    def _apply_changes(self, source: dict) -> CommentedMap:
+        """
+        Apply changes using source content and key order.
         """
         result = CommentedMap()
 
-        for key in base.keys():
-            if key not in diff.deleted:
-                result[key] = source.get(key, base[key])
+        for key, value in source.items():
+            result[key] = value
 
-        for key in diff.added:
+        return result
+
+    def reorder_by_reference(
+        self, target: dict, reference: dict
+    ) -> CommentedMap:
+        """
+        Reorder target dictionary keys to match reference dictionary order.
+        """
+        result = CommentedMap()
+
+        for key in reference.keys():
+            if key in target:
+                result[key] = target[key]
+
+        for key in target.keys():
             if key not in result:
-                result[key] = source[key]
+                result[key] = target[key]
 
         return result

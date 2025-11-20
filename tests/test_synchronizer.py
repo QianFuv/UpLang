@@ -153,7 +153,7 @@ def test_synchronize_chinese_no_existing(synchronizer, mod_en, mod_zh):
     """
     diff = DiffResult(added={"key1", "key2", "key3"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, None, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, mod_en, None, diff)
 
     assert result_file.mod_id == "testmod"
     assert result_file.lang_code == "zh_cn"
@@ -168,7 +168,7 @@ def test_synchronize_chinese_no_mod_zh(synchronizer, mod_en):
     """
     diff = DiffResult(added={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, None, None, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, None, mod_en, None, diff)
 
     assert result_file.content["key1"] == "value1"
     assert result_file.content["key2"] == "value2"
@@ -178,6 +178,12 @@ def test_synchronize_chinese_preserves_existing(synchronizer, mod_en, mod_zh):
     """
     Test that Chinese sync preserves existing translations.
     """
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -186,7 +192,7 @@ def test_synchronize_chinese_preserves_existing(synchronizer, mod_en, mod_zh):
     )
     diff = DiffResult(added={"key3"}, unchanged={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert result_file.content["key1"] == "已翻译1"
     assert result_file.content["key2"] == "已翻译2"
@@ -197,6 +203,12 @@ def test_synchronize_chinese_updates_modified_keys(synchronizer, mod_en, mod_zh)
     """
     Test that Chinese sync updates modified keys.
     """
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "old_value"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -205,7 +217,7 @@ def test_synchronize_chinese_updates_modified_keys(synchronizer, mod_en, mod_zh)
     )
     diff = DiffResult(modified={"key1"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert result_file.content["key1"] == "值1"
 
@@ -214,6 +226,12 @@ def test_synchronize_chinese_removes_deleted_keys(synchronizer, mod_en, mod_zh):
     """
     Test that Chinese sync removes deleted keys.
     """
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2", "deleted_key": "deleted"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -222,7 +240,7 @@ def test_synchronize_chinese_removes_deleted_keys(synchronizer, mod_en, mod_zh):
     )
     diff = DiffResult(deleted={"deleted_key"}, unchanged={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert "key1" in result_file.content
     assert "key2" in result_file.content
@@ -241,7 +259,7 @@ def test_synchronize_chinese_uses_english_fallback(synchronizer, mod_en):
     )
     diff = DiffResult(added={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, None, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, mod_en, None, diff)
 
     assert result_file.content["key1"] == "值1"
     assert result_file.content["key2"] == "value2"
@@ -251,6 +269,12 @@ def test_synchronize_chinese_mixed_changes(synchronizer, mod_en, mod_zh):
     """
     Test Chinese sync with mixed changes.
     """
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "old_value2", "old_key": "old"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -261,7 +285,7 @@ def test_synchronize_chinese_mixed_changes(synchronizer, mod_en, mod_zh):
         added={"key3"}, modified={"key2"}, deleted={"old_key"}, unchanged={"key1"}
     )
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert result_file.content["key1"] == "已翻译1"
     assert result_file.content["key2"] == "值2"
@@ -285,6 +309,12 @@ def test_synchronize_chinese_changed_key_missing_in_mod_zh(synchronizer):
         content={"key2": "值2"},
         content_hash="hash2",
     )
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "old_value1", "key2": "old_value2"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -293,7 +323,7 @@ def test_synchronize_chinese_changed_key_missing_in_mod_zh(synchronizer):
     )
     diff = DiffResult(modified={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert result_file.content["key1"] == "new_value1"
     assert result_file.content["key2"] == "值2"
@@ -301,13 +331,11 @@ def test_synchronize_chinese_changed_key_missing_in_mod_zh(synchronizer):
 
 def test_apply_changes_preserves_order(synchronizer):
     """
-    Test that _apply_changes preserves key order.
+    Test that _apply_changes uses source key order.
     """
-    base = CommentedMap([("z", "last"), ("a", "first"), ("m", "middle")])
     source = CommentedMap([("z", "new_last"), ("a", "first"), ("m", "middle")])
-    diff = DiffResult(modified={"z"})
 
-    result = synchronizer._apply_changes(base, source, diff)
+    result = synchronizer._apply_changes(source)
 
     assert list(result.keys()) == ["z", "a", "m"]
     assert result["z"] == "new_last"
@@ -315,30 +343,28 @@ def test_apply_changes_preserves_order(synchronizer):
 
 def test_apply_changes_adds_new_keys(synchronizer):
     """
-    Test that _apply_changes adds new keys.
+    Test that _apply_changes includes all source keys.
     """
-    base = CommentedMap([("key1", "value1")])
     source = CommentedMap([("key1", "value1"), ("key2", "value2")])
-    diff = DiffResult(added={"key2"})
 
-    result = synchronizer._apply_changes(base, source, diff)
+    result = synchronizer._apply_changes(source)
 
+    assert "key1" in result
     assert "key2" in result
     assert result["key2"] == "value2"
 
 
 def test_apply_changes_removes_deleted_keys(synchronizer):
     """
-    Test that _apply_changes removes deleted keys.
+    Test that _apply_changes only includes source keys.
     """
-    base = CommentedMap([("key1", "value1"), ("key2", "value2")])
     source = CommentedMap([("key1", "value1")])
-    diff = DiffResult(deleted={"key2"})
 
-    result = synchronizer._apply_changes(base, source, diff)
+    result = synchronizer._apply_changes(source)
 
     assert "key1" in result
     assert "key2" not in result
+    assert len(result) == 1
 
 
 def test_synchronize_chinese_removes_orphaned_keys(synchronizer):
@@ -358,6 +384,12 @@ def test_synchronize_chinese_removes_orphaned_keys(synchronizer):
         content={"key1": "值1", "key2": "值2", "orphaned_key": "孤立键"},
         content_hash="hash2",
     )
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2", "orphaned_key": "orphaned"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -366,7 +398,7 @@ def test_synchronize_chinese_removes_orphaned_keys(synchronizer):
     )
     diff = DiffResult(unchanged={"key1", "key2"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert "key1" in result_file.content
     assert "key2" in result_file.content
@@ -391,6 +423,12 @@ def test_synchronize_chinese_adds_missing_keys(synchronizer):
         content={"key1": "值1", "key2": "值2"},
         content_hash="hash2",
     )
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "value1", "key2": "value2", "key3": "value3"},
+        content_hash="hash_en",
+    )
     rp_zh = LanguageFile(
         mod_id="testmod",
         lang_code="zh_cn",
@@ -399,9 +437,200 @@ def test_synchronize_chinese_adds_missing_keys(synchronizer):
     )
     diff = DiffResult(unchanged={"key1", "key2", "key3"})
 
-    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_zh, diff)
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
     assert result_file.content["key1"] == "已翻译1"
     assert result_file.content["key2"] == "值2"
     assert result_file.content["key3"] == "value3"
     assert len(result_file.content) == 3
+
+
+def test_synchronize_chinese_preserves_when_no_rp_en(synchronizer, mod_en):
+    """
+    Test that Chinese sync preserves existing translations when resource pack has no en_us.
+    This is the bug fix for when resource pack only has zh_cn.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "模组值1", "key2": "模组值2"},
+        content_hash="hash2",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "资源包翻译1", "key2": "资源包翻译2"},
+        content_hash="hash3",
+    )
+    diff = DiffResult(added={"key1", "key2", "key3"})
+
+    result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, None, rp_zh, diff)
+
+    assert result_file.content["key1"] == "资源包翻译1"
+    assert result_file.content["key2"] == "资源包翻译2"
+    assert result_file.content["key3"] == "value3"
+
+
+def test_synchronize_chinese_as_primary_no_existing(synchronizer):
+    """
+    Test synchronizing Chinese as primary language when no resource pack file exists.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1", "key2": "值2", "key3": "值3"},
+        content_hash="hash123",
+    )
+
+    result_file, diff = synchronizer.synchronize_chinese_as_primary(mod_zh, None)
+
+    assert result_file.mod_id == "testmod"
+    assert result_file.lang_code == "zh_cn"
+    assert result_file.content == mod_zh.content
+    assert diff.added == {"key1", "key2", "key3"}
+    assert len(diff.modified) == 0
+    assert len(diff.deleted) == 0
+
+
+def test_synchronize_chinese_as_primary_no_changes(synchronizer):
+    """
+    Test synchronizing Chinese as primary language with no changes.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1", "key2": "值2"},
+        content_hash="hash1",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1", "key2": "值2"},
+        content_hash="hash2",
+    )
+
+    result_file, diff = synchronizer.synchronize_chinese_as_primary(mod_zh, rp_zh)
+
+    assert result_file.content == mod_zh.content
+    assert len(diff.added) == 0
+    assert len(diff.modified) == 0
+    assert len(diff.deleted) == 0
+    assert not diff.has_changes
+
+
+def test_synchronize_chinese_as_primary_with_changes(synchronizer):
+    """
+    Test synchronizing Chinese as primary language with changes.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "新值1", "key2": "值2", "key3": "值3"},
+        content_hash="hash1",
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "旧值1", "key4": "值4"},
+        content_hash="hash2",
+    )
+
+    result_file, diff = synchronizer.synchronize_chinese_as_primary(mod_zh, rp_zh)
+
+    assert diff.added == {"key2", "key3"}
+    assert diff.modified == {"key1"}
+    assert diff.deleted == {"key4"}
+    assert result_file.content["key1"] == "新值1"
+    assert result_file.content["key2"] == "值2"
+    assert result_file.content["key3"] == "值3"
+    assert "key4" not in result_file.content
+
+
+def test_reorder_by_reference_basic(synchronizer):
+    """
+    Test basic key reordering to match reference dictionary.
+    """
+    target = CommentedMap([("z", "last"), ("a", "first"), ("m", "middle")])
+    reference = CommentedMap([("a", "ref1"), ("m", "ref2"), ("z", "ref3")])
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert list(result.keys()) == ["a", "m", "z"]
+    assert result["a"] == "first"
+    assert result["m"] == "middle"
+    assert result["z"] == "last"
+
+
+def test_reorder_by_reference_extra_keys_in_target(synchronizer):
+    """
+    Test reordering when target has extra keys not in reference.
+    """
+    target = CommentedMap([("key1", "值1"), ("key2", "值2"), ("key3", "值3")])
+    reference = CommentedMap([("key1", "value1"), ("key3", "value3")])
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert list(result.keys()) == ["key1", "key3", "key2"]
+    assert result["key1"] == "值1"
+    assert result["key2"] == "值2"
+    assert result["key3"] == "值3"
+
+
+def test_reorder_by_reference_extra_keys_in_reference(synchronizer):
+    """
+    Test reordering when reference has keys not in target.
+    """
+    target = CommentedMap([("key1", "值1"), ("key2", "值2")])
+    reference = CommentedMap(
+        [("key1", "value1"), ("key2", "value2"), ("key3", "value3")]
+    )
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert list(result.keys()) == ["key1", "key2"]
+    assert result["key1"] == "值1"
+    assert result["key2"] == "值2"
+    assert "key3" not in result
+
+
+def test_reorder_by_reference_empty_reference(synchronizer):
+    """
+    Test reordering with empty reference dictionary.
+    """
+    target = CommentedMap([("key1", "值1"), ("key2", "值2")])
+    reference = CommentedMap()
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert list(result.keys()) == ["key1", "key2"]
+    assert result["key1"] == "值1"
+    assert result["key2"] == "值2"
+
+
+def test_reorder_by_reference_empty_target(synchronizer):
+    """
+    Test reordering with empty target dictionary.
+    """
+    target = CommentedMap()
+    reference = CommentedMap([("key1", "value1"), ("key2", "value2")])
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert len(result) == 0
+
+
+def test_reorder_by_reference_preserves_values(synchronizer):
+    """
+    Test that reordering preserves all values from target.
+    """
+    target = CommentedMap(
+        [("z", "最后"), ("a", "第一"), ("m", "中间"), ("extra", "额外")]
+    )
+    reference = CommentedMap([("a", "first"), ("m", "middle"), ("z", "last")])
+
+    result = synchronizer.reorder_by_reference(target, reference)
+
+    assert result["z"] == "最后"
+    assert result["a"] == "第一"
+    assert result["m"] == "中间"
+    assert result["extra"] == "额外"
