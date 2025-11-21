@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from uplang.web.api import create_router
 
 
-def create_app(resourcepack_dir: Path) -> FastAPI:
+def create_app(resourcepack_dir: Path, static_dir: Path | None = None) -> FastAPI:
     """Create and configure FastAPI application."""
     app = FastAPI(
         title="UpLang Translation Interface",
@@ -20,7 +20,8 @@ def create_app(resourcepack_dir: Path) -> FastAPI:
     api_router = create_router(resourcepack_dir)
     app.include_router(api_router)
 
-    static_dir = Path(__file__).parent / "static"
+    if static_dir is None:
+        static_dir = Path(__file__).parent / "static"
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     @app.get("/")

@@ -2,7 +2,6 @@
 Tests for FastAPI application.
 """
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -15,7 +14,7 @@ from uplang.web.app import create_app, start_server
 @pytest.fixture
 def mock_resourcepack(tmp_path):
     """
-    Create a mock resource pack structure with static files.
+    Create a mock resource pack structure.
     """
     assets_dir = tmp_path / "assets"
     test_mod_lang = assets_dir / "testmod" / "lang"
@@ -25,16 +24,23 @@ def mock_resourcepack(tmp_path):
         '{"item.sword": "Sword"}', encoding="utf-8"
     )
 
-    static_dir = Path(__file__).parent.parent / "src" / "uplang" / "web" / "static"
-    if static_dir.exists():
-        return tmp_path
+    return tmp_path
 
-    static_dir.mkdir(parents=True, exist_ok=True)
+
+@pytest.fixture
+def mock_static_dir(tmp_path):
+    """
+    Create a temporary static directory with test files.
+    """
+    static_dir = tmp_path / "static"
+    static_dir.mkdir()
+
     (static_dir / "index.html").write_text(
         "<html><body>Test</body></html>", encoding="utf-8"
     )
+    (static_dir / "test.css").write_text("body { color: red; }", encoding="utf-8")
 
-    return tmp_path
+    return static_dir
 
 
 def test_create_app(mock_resourcepack):
@@ -48,11 +54,11 @@ def test_create_app(mock_resourcepack):
     assert app.version == "1.0.0"
 
 
-def test_create_app_includes_api_router(mock_resourcepack):
+def test_create_app_includes_api_router(mock_resourcepack, mock_static_dir):
     """
     Test that app includes API router.
     """
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
 
     api_routes = [
         route
@@ -62,11 +68,11 @@ def test_create_app_includes_api_router(mock_resourcepack):
     assert len(api_routes) > 0
 
 
-def test_create_app_mounts_static(mock_resourcepack):
+def test_create_app_mounts_static(mock_resourcepack, mock_static_dir):
     """
     Test that app mounts static files.
     """
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
 
     static_routes = [
         route
@@ -76,17 +82,11 @@ def test_create_app_mounts_static(mock_resourcepack):
     assert len(static_routes) > 0
 
 
-def test_root_endpoint(mock_resourcepack):
+def test_root_endpoint(mock_resourcepack, mock_static_dir):
     """
     Test GET / endpoint serves index.html.
     """
-    static_dir = Path(__file__).parent.parent / "src" / "uplang" / "web" / "static"
-    static_dir.mkdir(parents=True, exist_ok=True)
-    (static_dir / "index.html").write_text(
-        "<html><body>Test</body></html>", encoding="utf-8"
-    )
-
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
     client = TestClient(app)
 
     response = client.get("/")
@@ -118,11 +118,11 @@ def test_favicon_endpoint_no_content(mock_resourcepack):
     assert response.content == b""
 
 
-def test_api_endpoints_accessible(mock_resourcepack):
+def test_api_endpoints_accessible(mock_resourcepack, mock_static_dir):
     """
     Test that API endpoints are accessible through app.
     """
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
     client = TestClient(app)
 
     response = client.get("/api/mods")
@@ -159,24 +159,20 @@ def test_start_server_default_params(mock_resourcepack):
         assert call_args[1]["port"] == 8000
 
 
-def test_app_description(mock_resourcepack):
+def test_app_description(mock_resourcepack, mock_static_dir):
     """
     Test app has correct description.
     """
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
 
     assert "Minecraft modpack translations" in app.description
 
 
-def test_static_file_serving(mock_resourcepack):
+def test_static_file_serving(mock_resourcepack, mock_static_dir):
     """
     Test that static files can be served.
     """
-    static_dir = Path(__file__).parent.parent / "src" / "uplang" / "web" / "static"
-    static_dir.mkdir(parents=True, exist_ok=True)
-    (static_dir / "test.css").write_text("body { color: red; }", encoding="utf-8")
-
-    app = create_app(mock_resourcepack)
+    app = create_app(mock_resourcepack, static_dir=mock_static_dir)
     client = TestClient(app)
 
     response = client.get("/static/test.css")
