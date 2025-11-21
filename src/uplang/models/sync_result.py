@@ -60,4 +60,7 @@ class SyncResult:
             return f"{self.mod_id}: skipped (no changes)"
         if not self.success:
             return f"{self.mod_id}: failed ({self.error})"
-        return f"{self.mod_id}: +{self.added_keys} ~{self.modified_keys} -{self.deleted_keys}"
+        return (
+            f"{self.mod_id}: "
+            f"+{self.added_keys} ~{self.modified_keys} -{self.deleted_keys}"
+        )

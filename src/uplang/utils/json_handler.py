@@ -28,14 +28,16 @@ def _escape_pua_in_json_string(json_str: str) -> str:
     result = []
     for char in json_str:
         code = ord(char)
-        if (0xE000 <= code <= 0xF8FF or
-            0xD800 <= code <= 0xDFFF or
-            0xFDD0 <= code <= 0xFDEF or
-            code in (0xFFFE, 0xFFFF)):
+        if (
+            0xE000 <= code <= 0xF8FF
+            or 0xD800 <= code <= 0xDFFF
+            or 0xFDD0 <= code <= 0xFDEF
+            or code in (0xFFFE, 0xFFFF)
+        ):
             result.append(f"\\u{code:04X}")
         else:
             result.append(char)
-    return ''.join(result)
+    return "".join(result)
 
 
 class JSONHandler:
@@ -60,25 +62,26 @@ class JSONHandler:
         result = []
         for char in text:
             code = ord(char)
-            if code in (ord('\n'), ord('\r'), ord('\t')):
-                result.append(char)
-            elif 0xD800 <= code <= 0xDFFF:
-                result.append(char)
-            elif (0x20 <= code < 0x7F) or code >= 0xA0:
+            if (
+                code in (ord("\n"), ord("\r"), ord("\t"))
+                or 0xD800 <= code <= 0xDFFF
+                or (0x20 <= code < 0x7F)
+                or code >= 0xA0
+            ):
                 result.append(char)
             else:
-                result.append(' ')
-        return ''.join(result)
+                result.append(" ")
+        return "".join(result)
 
     def _strip_comments(self, text: str) -> str:
         """
         Remove single-line and multi-line comments from JSON text.
         """
-        text = text.replace('\t', ' ')
+        text = text.replace("\t", " ")
         text = text.lstrip()
         text = self._clean_control_chars(text)
 
-        lines = []
+        lines: list[str] = []
         for line in text.splitlines():
             stripped = line.strip()
             if stripped.startswith("//"):
@@ -96,7 +99,7 @@ class JSONHandler:
             lines.append(line)
 
         result = "\n".join(lines)
-        result = re.sub(r'/\*.*?\*/', '', result, flags=re.DOTALL)
+        result = re.sub(r"/\*.*?\*/", "", result, flags=re.DOTALL)
         return result
 
     def load(self, file_path: Path) -> dict[str, Any]:
@@ -113,8 +116,10 @@ class JSONHandler:
 
         for encoding in encodings:
             try:
-                errors = "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
-                with open(file_path, "r", encoding=encoding, errors=errors) as f:
+                errors = (
+                    "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
+                )
+                with open(file_path, encoding=encoding, errors=errors) as f:
                     text = f.read()
                     text = self._strip_comments(text)
 
@@ -154,7 +159,9 @@ class JSONHandler:
 
         for encoding in encodings:
             try:
-                errors = "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
+                errors = (
+                    "surrogatepass" if encoding in ("utf-8", "utf-8-sig") else "strict"
+                )
                 text = content.decode(encoding, errors=errors)
                 text = self._strip_comments(text)
 

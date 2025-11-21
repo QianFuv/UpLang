@@ -2,10 +2,9 @@
 Tests for cache manager.
 """
 
-import pytest
 import json
-from pathlib import Path
-from datetime import datetime
+
+import pytest
 
 from uplang.core.cache import CacheManager
 from uplang.exceptions import CacheError
@@ -58,7 +57,9 @@ def test_cache_manager_load_existing_cache(cache_path):
 
     cache_manager = CacheManager(cache_path)
 
-    assert cache_manager.cache_data["mods"]["testmod"]["jar_name"] == "testmod-1.0.0.jar"
+    assert (
+        cache_manager.cache_data["mods"]["testmod"]["jar_name"] == "testmod-1.0.0.jar"
+    )
     assert cache_manager.cache_data["mods"]["testmod"]["en_us_hash"] == "hash123"
 
 
@@ -107,7 +108,7 @@ def test_save_cache(cache_manager, cache_path):
 
     assert cache_path.exists()
 
-    with open(cache_path, "r", encoding="utf-8") as f:
+    with open(cache_path, encoding="utf-8") as f:
         loaded_data = json.load(f)
 
     assert loaded_data["mods"]["testmod"]["jar_name"] == "testmod-1.0.0.jar"
@@ -212,7 +213,9 @@ def test_update_mod(cache_manager):
     cache_manager.update_mod("testmod", "testmod-1.0.0.jar", "hash123", "hash456")
 
     assert "testmod" in cache_manager.cache_data["mods"]
-    assert cache_manager.cache_data["mods"]["testmod"]["jar_name"] == "testmod-1.0.0.jar"
+    assert (
+        cache_manager.cache_data["mods"]["testmod"]["jar_name"] == "testmod-1.0.0.jar"
+    )
     assert cache_manager.cache_data["mods"]["testmod"]["en_us_hash"] == "hash123"
     assert cache_manager.cache_data["mods"]["testmod"]["zh_cn_hash"] == "hash456"
     assert "last_sync" in cache_manager.cache_data["mods"]["testmod"]
@@ -333,7 +336,7 @@ def test_save_cache_failure(tmp_path, monkeypatch):
     cache_manager = CacheManager(cache_path)
 
     def mock_dump_failure(data, file, **kwargs):
-        raise IOError("Permission denied")
+        raise OSError("Permission denied")
 
     monkeypatch.setattr(json_module, "dump", mock_dump_failure)
 

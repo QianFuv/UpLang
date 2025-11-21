@@ -40,7 +40,13 @@ from uplang.utils.output import (
 @click.option("--no-color", is_flag=True, help="Disable colored output")
 @click.option("--log-file", type=click.Path(path_type=str), help="Log file path")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool, quiet: bool, no_color: bool, log_file: str | None):
+def main(
+    ctx: click.Context,
+    verbose: bool,
+    quiet: bool,
+    no_color: bool,
+    log_file: str | None,
+):
     """
     UpLang - Minecraft Modpack Language File Synchronizer
     """
@@ -62,12 +68,20 @@ def main(ctx: click.Context, verbose: bool, quiet: bool, no_color: bool, log_fil
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str)
+)
 @click.argument("resourcepack_dir", type=click.Path(file_okay=False, path_type=str))
 @click.option("--dry-run", is_flag=True, help="Simulate without modifying files")
 @click.option("--force", is_flag=True, help="Ignore cache, process all mods")
 @click.option("--parallel", "-p", default=4, help="Number of parallel workers")
-def sync(mods_dir: str, resourcepack_dir: str, dry_run: bool, force: bool, parallel: int):
+def sync(
+    mods_dir: str,
+    resourcepack_dir: str,
+    dry_run: bool,
+    force: bool,
+    parallel: int,
+):
     """
     Synchronize language files from mods to resource pack.
     """
@@ -97,7 +111,9 @@ def sync(mods_dir: str, resourcepack_dir: str, dry_run: bool, force: bool, paral
         results = []
         with ThreadPoolExecutor(max_workers=parallel) as executor:
             futures = {
-                executor.submit(_sync_single_mod, mod, rp_path, cache, dry_run, force): mod
+                executor.submit(
+                    _sync_single_mod, mod, rp_path, cache, dry_run, force
+                ): mod
                 for mod in mods
             }
 
@@ -129,18 +145,29 @@ def sync(mods_dir: str, resourcepack_dir: str, dry_run: bool, force: bool, paral
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str)
+)
 @click.argument("resourcepack_dir", type=click.Path(file_okay=False, path_type=str))
 def check(mods_dir: str, resourcepack_dir: str):
     """
     Check differences without synchronizing (dry-run mode).
     """
     ctx = click.get_current_context()
-    ctx.invoke(sync, mods_dir=mods_dir, resourcepack_dir=resourcepack_dir, dry_run=True, force=False, parallel=4)
+    ctx.invoke(
+        sync,
+        mods_dir=mods_dir,
+        resourcepack_dir=resourcepack_dir,
+        dry_run=True,
+        force=False,
+        parallel=4,
+    )
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str)
+)
 def list(mods_dir: str):
     """
     List all mods and their language files.
@@ -193,7 +220,10 @@ def extract(mod_jar: str, output_dir: str):
         for lang_code, lang_file in lang_files.items():
             output_file = output_path / f"{lang_code}.json"
             extractor.json_handler.dump(lang_file.content, output_file)
-            print_success(f"Extracted {lang_code}.json ({len(lang_file.content)} keys) -> {output_file}")
+            key_count = len(lang_file.content)
+            print_success(
+                f"Extracted {lang_code}.json ({key_count} keys) -> {output_file}"
+            )
 
         print_success(f"\nExtracted {len(lang_files)} language files")
 
@@ -204,7 +234,10 @@ def extract(mod_jar: str, output_dir: str):
 
 @main.command()
 @click.argument("mod_jar", type=click.Path(exists=True, dir_okay=False, path_type=str))
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
 def diff(mod_jar: str, resourcepack_dir: str):
     """
     Show detailed differences for a single mod.
@@ -258,9 +291,16 @@ def diff(mod_jar: str, resourcepack_dir: str):
 
 
 @main.command()
-@click.argument("mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
-@click.option("--yes", "-y", is_flag=True, help="Skip confirmation and delete all orphaned mods")
+@click.argument(
+    "mods_dir", type=click.Path(exists=True, file_okay=False, path_type=str)
+)
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
+@click.option(
+    "--yes", "-y", is_flag=True, help="Skip confirmation and delete all orphaned mods"
+)
 def clean(mods_dir: str, resourcepack_dir: str, yes: bool):
     """
     Remove language files for mods that no longer exist.
@@ -324,7 +364,10 @@ def clean(mods_dir: str, resourcepack_dir: str, yes: bool):
 
 
 @main.command()
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
 def stats(resourcepack_dir: str):
     """
     Show translation statistics.
@@ -389,7 +432,10 @@ def stats(resourcepack_dir: str):
 
 
 @main.command()
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
 @click.option("--dry-run", is_flag=True, help="Check without modifying files")
 @click.option("--check", is_flag=True, help="Only check for issues, do not fix")
 def format(resourcepack_dir: str, dry_run: bool, check: bool):
@@ -440,19 +486,23 @@ def format(resourcepack_dir: str, dry_run: bool, check: bool):
             zh_file = None
 
         mod_fixed = False
-        from uplang.utils import calculate_dict_hash
         import json
+
+        from uplang.utils import calculate_dict_hash
 
         def needs_formatting(file_path, content):
             """
-            Check if file needs formatting by comparing current content with formatted version.
+            Check if file needs formatting by comparing current content
+            with formatted version.
             """
             try:
                 if not file_path.exists():
                     return True
-                with open(file_path, "r", encoding="utf-8", errors="surrogatepass") as f:
+                with open(file_path, encoding="utf-8", errors="surrogatepass") as f:
                     current_text = f.read()
-                formatted_text = json.dumps(content, ensure_ascii=False, indent=2) + "\n"
+                formatted_text = (
+                    json.dumps(content, ensure_ascii=False, indent=2) + "\n"
+                )
                 return current_text != formatted_text
             except Exception:
                 return True
@@ -537,7 +587,10 @@ def cache():
 
 
 @cache.command("clear")
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
 def cache_clear(resourcepack_dir: str):
     """
     Clear the cache to force full synchronization.
@@ -553,10 +606,17 @@ def cache_clear(resourcepack_dir: str):
 
 
 @main.command()
-@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
 @click.option("--host", default="127.0.0.1", help="Server host address")
 @click.option("--port", default=8000, type=int, help="Server port")
-@click.option("--open-browser/--no-open-browser", default=True, help="Open browser automatically")
+@click.option(
+    "--open-browser/--no-open-browser",
+    default=True,
+    help="Open browser automatically",
+)
 def web(resourcepack_dir: str, host: str, port: int, open_browser: bool):
     """
     Launch web interface for translation management.
@@ -570,11 +630,12 @@ def web(resourcepack_dir: str, host: str, port: int, open_browser: bool):
     print_info("Press Ctrl+C to stop the server")
 
     if open_browser:
-        import webbrowser
         import threading
+        import webbrowser
 
         def open_browser_delayed():
             import time
+
             time.sleep(1.5)
             webbrowser.open(f"http://{host}:{port}")
 
@@ -614,23 +675,30 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force):
             rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
 
             synced_en, diff = synchronizer.synchronize_english(mod_en, rp_en)
-            synced_zh = synchronizer.synchronize_chinese(synced_en, mod_zh, rp_en, rp_zh, diff)
+            synced_zh = synchronizer.synchronize_chinese(
+                synced_en, mod_zh, rp_en, rp_zh, diff
+            )
 
             zh_added_keys = 0
             zh_deleted_keys = 0
             if rp_zh is not None:
-                zh_added_keys = len(set(synced_zh.content.keys()) - set(rp_zh.content.keys()))
-                zh_deleted_keys = len(set(rp_zh.content.keys()) - set(synced_zh.content.keys()))
+                synced_keys = set(synced_zh.content.keys())
+                rp_keys = set(rp_zh.content.keys())
+                zh_added_keys = len(synced_keys - rp_keys)
+                zh_deleted_keys = len(rp_keys - synced_keys)
 
-            if not diff.has_changes and rp_en is not None:
-                if rp_zh is None or synced_zh.content == rp_zh.content:
-                    cache.update_mod(
-                        mod.mod_id,
-                        mod.jar_path.name,
-                        mod_en.content_hash,
-                        mod_zh.content_hash if mod_zh else None,
-                    )
-                    return SyncResult(mod_id=mod.mod_id, skipped=True)
+            if (
+                not diff.has_changes
+                and rp_en is not None
+                and (rp_zh is None or synced_zh.content == rp_zh.content)
+            ):
+                cache.update_mod(
+                    mod.mod_id,
+                    mod.jar_path.name,
+                    mod_en.content_hash,
+                    mod_zh.content_hash if mod_zh else None,
+                )
+                return SyncResult(mod_id=mod.mod_id, skipped=True)
 
             if not dry_run:
                 extractor.save_to_resource_pack(rp_path, synced_en)
@@ -725,7 +793,7 @@ def _print_summary(results):
     print_warning(f"Skipped: {skipped}")
     if failed > 0:
         print_error(f"Failed: {failed}")
-    print_info(f"\nTotal changes:")
+    print_info("\nTotal changes:")
     print_success(f"  Added keys: {total_added}")
     print_warning(f"  Modified keys: {total_modified}")
     print_error(f"  Deleted keys: {total_deleted}")

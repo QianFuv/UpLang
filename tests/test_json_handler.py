@@ -3,9 +3,9 @@ Tests for JSON handler.
 """
 
 import pytest
-from pathlib import Path
-from uplang.utils.json_handler import JSONHandler
+
 from uplang.exceptions import JSONParseError, LanguageFileError
+from uplang.utils.json_handler import JSONHandler
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ def test_load_json_with_bom(json_handler, tmp_path):
     """
     file_path = tmp_path / "with_bom.json"
     content = '{"key": "value"}'
-    file_path.write_bytes(b'\xef\xbb\xbf' + content.encode("utf-8"))
+    file_path.write_bytes(b"\xef\xbb\xbf" + content.encode("utf-8"))
 
     data = json_handler.load(file_path)
     assert data["key"] == "value"
@@ -134,7 +134,7 @@ def test_load_from_bytes_unicode(json_handler):
     """
     Test loading JSON from bytes with unicode.
     """
-    content = '{"key": "中文"}'.encode("utf-8")
+    content = '{"key": "中文"}'.encode()
     data = json_handler.load_from_bytes(content)
 
     assert data["key"] == "中文"
@@ -144,7 +144,7 @@ def test_load_from_bytes_empty(json_handler):
     """
     Test loading empty JSON from bytes.
     """
-    content = b'{}'
+    content = b"{}"
     data = json_handler.load_from_bytes(content)
 
     assert data == {}
@@ -154,7 +154,7 @@ def test_load_from_bytes_invalid(json_handler):
     """
     Test loading invalid JSON from bytes.
     """
-    content = b'invalid json{'
+    content = b"invalid json{"
 
     with pytest.raises(JSONParseError):
         json_handler.load_from_bytes(content)
@@ -253,7 +253,7 @@ def test_load_from_bytes_null(json_handler):
     """
     Test loading null JSON from bytes.
     """
-    content = b'null'
+    content = b"null"
     data = json_handler.load_from_bytes(content)
 
     assert data == {}
@@ -266,7 +266,7 @@ def test_dump_write_failure(json_handler, tmp_path, monkeypatch):
     import json
 
     def mock_dumps_failure(data, **kwargs):
-        raise IOError("Permission denied")
+        raise OSError("Permission denied")
 
     file_path = tmp_path / "output.json"
     data = {"key": "value"}
@@ -325,14 +325,14 @@ def test_strip_comments_line_starting_with_comment(json_handler, tmp_path):
     Test stripping lines that start with //.
     """
     file_path = tmp_path / "comments.json"
-    content = '''
+    content = """
 {
     // This is a comment
     "key1": "value1",
     // Another comment
     "key2": "value2"
 }
-'''
+"""
     file_path.write_text(content, encoding="utf-8")
 
     data = json_handler.load(file_path)
@@ -346,12 +346,12 @@ def test_strip_comments_inline_after_colon(json_handler, tmp_path):
     This covers line 91 in json_handler.py where the previous line ends with colon.
     """
     file_path = tmp_path / "inline_comments.json"
-    content = '''{
+    content = """{
     "nested": {
         "key1": "value1"  // this is a nested comment without comma
     },
     "key2": "value2"
-}'''
+}"""
     file_path.write_text(content, encoding="utf-8")
 
     data = json_handler.load(file_path)
@@ -364,13 +364,13 @@ def test_strip_comments_inline_without_comma(json_handler, tmp_path):
     Test handling inline comments on lines without commas.
     """
     file_path = tmp_path / "inline_no_comma.json"
-    content = '''
+    content = """
 {
     "key": {
         "nested": "value" // inline comment
     }
 }
-'''
+"""
     file_path.write_text(content, encoding="utf-8")
 
     data = json_handler.load(file_path)
@@ -388,7 +388,6 @@ def test_load_with_all_encoding_failures(json_handler, tmp_path, monkeypatch):
 
     def mock_open_with_decode_error(*args, **kwargs):
         file_obj = original_open(*args, **kwargs)
-        original_read = file_obj.read
 
         def failing_read():
             raise UnicodeDecodeError("utf-8", b"", 0, 1, "mocked error")
@@ -411,8 +410,6 @@ def test_load_from_bytes_latin1_fallback(json_handler):
     because latin-1 and cp1252 can decode virtually any byte sequence.
     This test verifies the fallback mechanism works correctly.
     """
-    content = b'\x80\x81\x82\x83'
+    content = b"\x80\x81\x82\x83"
     result = json_handler.load_from_bytes(content)
     assert isinstance(result, dict)
-
-

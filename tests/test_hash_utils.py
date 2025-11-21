@@ -2,9 +2,6 @@
 Tests for hash utilities.
 """
 
-import pytest
-from pathlib import Path
-
 from uplang.utils.hash_utils import calculate_dict_hash, calculate_hash
 
 

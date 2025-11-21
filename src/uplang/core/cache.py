@@ -31,7 +31,7 @@ class CacheManager:
             return self._create_empty_cache()
 
         try:
-            with open(self.cache_path, "r", encoding="utf-8") as f:
+            with open(self.cache_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             if data.get("version") != self.CACHE_VERSION:
@@ -90,10 +90,7 @@ class CacheManager:
         if en_us_hash and cached.get("en_us_hash") != en_us_hash:
             return True
 
-        if zh_cn_hash and cached.get("zh_cn_hash") != zh_cn_hash:
-            return True
-
-        return False
+        return bool(zh_cn_hash and cached.get("zh_cn_hash") != zh_cn_hash)
 
     def update_mod(
         self,

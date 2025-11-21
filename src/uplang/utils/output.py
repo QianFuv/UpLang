@@ -5,7 +5,7 @@ Console output utilities.
 import sys
 from typing import Any
 
-from colorama import just_fix_windows_console, Fore, Style
+from colorama import Fore, Style, just_fix_windows_console
 
 just_fix_windows_console()
 

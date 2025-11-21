@@ -2,14 +2,14 @@
 Tests for language file extractor.
 """
 
-import pytest
 import json
-from pathlib import Path
 from zipfile import ZipFile
 
+import pytest
+
 from uplang.core.extractor import LanguageExtractor
-from uplang.models import Mod, ModType
 from uplang.exceptions import LanguageFileError
+from uplang.models import Mod, ModType
 
 
 @pytest.fixture
@@ -277,7 +277,10 @@ def test_extract_language_files_with_unicode(extractor, tmp_path):
     }
 
     with ZipFile(jar_path, "w") as jar:
-        jar.writestr("assets/unicode/lang/en_us.json", json.dumps(content, indent=2, ensure_ascii=False))
+        jar.writestr(
+            "assets/unicode/lang/en_us.json",
+            json.dumps(content, indent=2, ensure_ascii=False),
+        )
 
     mod = Mod(
         mod_id="unicode",
@@ -391,7 +394,7 @@ def test_save_to_resource_pack_write_failure(extractor, tmp_path, monkeypatch):
     from uplang.utils.json_handler import JSONHandler
 
     def mock_dump_failure(data, path):
-        raise IOError("Permission denied")
+        raise OSError("Permission denied")
 
     resourcepack_dir = tmp_path / "resourcepack"
     lang_file = LanguageFile(

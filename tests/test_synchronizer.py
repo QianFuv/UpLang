@@ -6,7 +6,7 @@ import pytest
 from ruamel.yaml.comments import CommentedMap
 
 from uplang.core.synchronizer import LanguageSynchronizer
-from uplang.models import LanguageFile, DiffResult
+from uplang.models import DiffResult, LanguageFile
 
 
 @pytest.fixture
@@ -447,8 +447,8 @@ def test_synchronize_chinese_adds_missing_keys(synchronizer):
 
 def test_synchronize_chinese_preserves_when_no_rp_en(synchronizer, mod_en):
     """
-    Test that Chinese sync preserves existing translations when resource pack has no en_us.
-    This is the bug fix for when resource pack only has zh_cn.
+    Test that Chinese sync preserves existing translations when resource pack
+    has no en_us. This is the bug fix for when resource pack only has zh_cn.
     """
     mod_zh = LanguageFile(
         mod_id="testmod",
@@ -638,8 +638,8 @@ def test_reorder_by_reference_preserves_values(synchronizer):
 
 def test_synchronize_chinese_no_rp_en_with_missing_keys(synchronizer):
     """
-    Test Chinese sync when rp_en is None and keys missing from rp_zh but present in mod_zh.
-    This covers line 74 in synchronizer.py.
+    Test Chinese sync when rp_en is None and keys missing from rp_zh but
+    present in mod_zh. This covers line 74 in synchronizer.py.
     """
     mod_en = LanguageFile(
         mod_id="testmod",

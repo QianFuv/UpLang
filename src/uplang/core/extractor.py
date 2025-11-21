@@ -62,7 +62,10 @@ class LanguageExtractor:
                     with jar.open(path) as f:
                         content = self.json_handler.load_from_bytes(f.read())
 
-                    print_verbose(f"Extracted {mod.mod_id}/{lang_code}.json ({len(content)} keys)")
+                    key_count = len(content)
+                    print_verbose(
+                        f"Extracted {mod.mod_id}/{lang_code}.json ({key_count} keys)"
+                    )
 
                     return LanguageFile(
                         mod_id=mod.mod_id,
@@ -71,9 +74,7 @@ class LanguageExtractor:
                         content_hash=calculate_dict_hash(content),
                     )
             except Exception as e:
-                print_verbose(
-                    f"Failed to extract {path} from {mod.jar_path.name}: {e}"
-                )
+                print_verbose(f"Failed to extract {path} from {mod.jar_path.name}: {e}")
                 continue
 
         return None

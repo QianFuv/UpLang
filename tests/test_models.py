@@ -2,10 +2,9 @@
 Tests for data models.
 """
 
-import pytest
 from pathlib import Path
 
-from uplang.models import Mod, ModType, DiffResult, SyncResult, LanguageFile
+from uplang.models import DiffResult, LanguageFile, Mod, ModType, SyncResult
 
 
 def test_mod_creation():
@@ -160,5 +159,3 @@ def test_language_file_str_with_empty_content():
     assert "testmod" in result_str
     assert "zh_cn" in result_str
     assert "0 keys" in result_str
-
-

@@ -2,10 +2,9 @@
 Tests for path utilities.
 """
 
-import pytest
 from pathlib import Path
 
-from uplang.utils.path_utils import sanitize_filename, extract_mod_id
+from uplang.utils.path_utils import extract_mod_id, sanitize_filename
 
 
 def test_sanitize_filename_valid():

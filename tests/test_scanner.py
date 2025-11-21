@@ -2,15 +2,14 @@
 Tests for JAR file scanner.
 """
 
-import pytest
-from pathlib import Path
-from zipfile import ZipFile
 import json
-import tomllib
+from zipfile import ZipFile
+
+import pytest
 
 from uplang.core.scanner import ModScanner
+from uplang.exceptions import ModMetadataError, ModNotFoundError
 from uplang.models import ModType
-from uplang.exceptions import ModNotFoundError, ModMetadataError
 
 
 @pytest.fixture
@@ -48,11 +47,7 @@ def fabric_jar(tmp_path):
     """
     jar_path = tmp_path / "testmod-fabric-1.0.0.jar"
 
-    fabric_json = {
-        "id": "testmod",
-        "name": "Test Mod",
-        "version": "1.0.0"
-    }
+    fabric_json = {"id": "testmod", "name": "Test Mod", "version": "1.0.0"}
 
     with ZipFile(jar_path, "w") as jar:
         jar.writestr("fabric.mod.json", json.dumps(fabric_json))

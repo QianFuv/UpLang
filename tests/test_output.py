@@ -3,18 +3,16 @@ Tests for console output utilities.
 """
 
 import pytest
-import sys
-from io import StringIO
 
 from uplang.utils.output import (
+    print_error,
+    print_info,
+    print_success,
+    print_verbose,
+    print_warning,
     set_color_enabled,
     set_quiet_mode,
     set_verbose_mode,
-    print_info,
-    print_success,
-    print_warning,
-    print_error,
-    print_verbose,
 )
 
 

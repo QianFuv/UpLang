@@ -60,13 +60,10 @@ class LanguageSynchronizer:
         """
         result_content = CommentedMap()
 
-        if rp_zh is None:
-            rp_zh_content = {}
-        else:
-            rp_zh_content = rp_zh.content
+        rp_zh_content = {} if rp_zh is None else rp_zh.content
 
         if rp_en is None and rp_zh is not None:
-            for key in mod_en.content.keys():
+            for key in mod_en.content:
                 if key in rp_zh_content:
                     result_content[key] = rp_zh_content[key]
                 else:
@@ -77,7 +74,7 @@ class LanguageSynchronizer:
         else:
             changed_keys = diff.added | diff.modified
 
-            for key in mod_en.content.keys():
+            for key in mod_en.content:
                 if key in changed_keys:
                     if mod_zh and key in mod_zh.content:
                         result_content[key] = mod_zh.content[key]
@@ -142,19 +139,17 @@ class LanguageSynchronizer:
 
         return result
 
-    def reorder_by_reference(
-        self, target: dict, reference: dict
-    ) -> CommentedMap:
+    def reorder_by_reference(self, target: dict, reference: dict) -> CommentedMap:
         """
         Reorder target dictionary keys to match reference dictionary order.
         """
         result = CommentedMap()
 
-        for key in reference.keys():
+        for key in reference:
             if key in target:
                 result[key] = target[key]
 
-        for key in target.keys():
+        for key in target:
             if key not in result:
                 result[key] = target[key]
 

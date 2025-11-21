@@ -5,7 +5,7 @@ A command-line tool to streamline the process of updating language files
 for Minecraft Java Edition modpacks.
 """
 
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 try:
     __version__ = version("uplang")

@@ -5,13 +5,13 @@ Tests for custom exceptions.
 import pytest
 
 from uplang.exceptions import (
-    UpLangError,
-    ModNotFoundError,
-    ModMetadataError,
-    LanguageFileError,
-    JSONParseError,
-    SyncError,
     CacheError,
+    JSONParseError,
+    LanguageFileError,
+    ModMetadataError,
+    ModNotFoundError,
+    SyncError,
+    UpLangError,
     ValidationError,
 )
 

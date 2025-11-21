@@ -45,7 +45,9 @@ def create_router(resourcepack_dir: Path) -> APIRouter:
         return {"mod_id": mod_id, "items": items, "total": len(items)}
 
     @router.put("/mods/{mod_id}/translations")
-    async def update_translations(mod_id: str, data: TranslationUpdate) -> dict[str, Any]:
+    async def update_translations(
+        mod_id: str, data: TranslationUpdate
+    ) -> dict[str, Any]:
         """Update translations for a mod."""
         success = service.save_translations(mod_id, data.translations)
 

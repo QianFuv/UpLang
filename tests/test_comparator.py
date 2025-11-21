@@ -2,8 +2,6 @@
 Tests for language file comparator.
 """
 
-import pytest
-
 from uplang.core.comparator import LanguageComparator
 
 

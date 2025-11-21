@@ -3,7 +3,6 @@ Tests for package initialization.
 """
 
 import sys
-import pytest
 from importlib.metadata import PackageNotFoundError
 
 
@@ -21,10 +20,12 @@ def test_version_when_package_not_found(monkeypatch):
     """
     Test that __version__ defaults to 0.0.0.dev when package is not found.
     """
+
     def mock_version(package_name):
         raise PackageNotFoundError(f"Package {package_name} not found")
 
     import importlib.metadata
+
     monkeypatch.setattr(importlib.metadata, "version", mock_version)
 
     if "uplang" in sys.modules:

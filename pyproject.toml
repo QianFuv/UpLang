@@ -26,6 +26,8 @@ Repository = "https://github.com/QianFuv/UpLang"
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
+    "mypy>=1.18.2",
+    "types-colorama>=0.4.15"
 ]
 
 [tool.pytest.ini_options]
@@ -42,3 +44,19 @@ omit = [
 [build-system]
 requires = ["uv_build>=0.8.5,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]

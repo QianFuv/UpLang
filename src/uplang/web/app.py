@@ -32,6 +32,7 @@ def create_app(resourcepack_dir: Path) -> FastAPI:
     async def favicon():
         """Serve favicon to avoid 404 errors."""
         from fastapi.responses import Response
+
         return Response(status_code=204)
 
     return app

@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from uplang.core.extractor import LanguageExtractor
-from uplang.core.scanner import ModScanner
-from uplang.models import LanguageFile, Mod
+from uplang.models import LanguageFile
 from uplang.utils.json_handler import JSONHandler
 
 
@@ -138,17 +137,17 @@ class TranslationService:
                 self.resourcepack_dir, mod_id, "zh_cn"
             )
 
-            if zh_file:
-                zh_content = zh_file.content.copy()
-            else:
-                zh_content = {}
+            zh_content = zh_file.content.copy() if zh_file else {}
 
             zh_content.update(translations)
 
             reordered_content = self._reorder_by_reference(zh_content, en_file.content)
 
             zh_lang_file = LanguageFile(
-                mod_id=mod_id, lang_code="zh_cn", content=reordered_content, content_hash=None
+                mod_id=mod_id,
+                lang_code="zh_cn",
+                content=reordered_content,
+                content_hash=None,
             )
 
             self.extractor.save_to_resource_pack(self.resourcepack_dir, zh_lang_file)
