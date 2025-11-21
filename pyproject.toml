@@ -12,6 +12,8 @@ dependencies = [
     "click>=8.1.0",
     "colorama>=0.4.6",
     "ruamel.yaml>=0.18.0",
+    "fastapi>=0.121.3",
+    "uvicorn[standard]>=0.38.0",
 ]
 
 [project.scripts]

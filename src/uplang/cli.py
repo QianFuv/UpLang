@@ -552,6 +552,43 @@ def cache_clear(resourcepack_dir: str):
         print_warning("No cache file found")
 
 
+@main.command()
+@click.argument("resourcepack_dir", type=click.Path(exists=True, file_okay=False, path_type=str))
+@click.option("--host", default="127.0.0.1", help="Server host address")
+@click.option("--port", default=8000, type=int, help="Server port")
+@click.option("--open-browser/--no-open-browser", default=True, help="Open browser automatically")
+def web(resourcepack_dir: str, host: str, port: int, open_browser: bool):
+    """
+    Launch web interface for translation management.
+    """
+    from uplang.web.app import start_server
+
+    rp_path = Path(resourcepack_dir)
+
+    print_info(f"Starting web server at http://{host}:{port}")
+    print_info(f"Resource pack directory: {rp_path}")
+    print_info("Press Ctrl+C to stop the server")
+
+    if open_browser:
+        import webbrowser
+        import threading
+
+        def open_browser_delayed():
+            import time
+            time.sleep(1.5)
+            webbrowser.open(f"http://{host}:{port}")
+
+        threading.Thread(target=open_browser_delayed, daemon=True).start()
+
+    try:
+        start_server(rp_path, host, port)
+    except KeyboardInterrupt:
+        print_info("\nServer stopped")
+    except Exception as e:
+        print_error(f"Failed to start server: {e}")
+        sys.exit(1)
+
+
 def _sync_single_mod(mod, rp_path, cache, dry_run, force):
     """
     Synchronize a single mod's language files.
