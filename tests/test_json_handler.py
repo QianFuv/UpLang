@@ -413,3 +413,37 @@ def test_load_from_bytes_latin1_fallback(json_handler):
     content = b"\x80\x81\x82\x83"
     result = json_handler.load_from_bytes(content)
     assert isinstance(result, dict)
+
+
+def test_strip_comments_with_comma(json_handler, tmp_path):
+    """
+    Test stripping inline comments when line ends with comma.
+    This covers line 98 in json_handler.py.
+    """
+    file_path = tmp_path / "comma_comment.json"
+    content = """{
+    "key1": "value1", // comment after comma
+    "key2": "value2"
+}"""
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert data["key1"] == "value1"
+    assert data["key2"] == "value2"
+
+
+def test_strip_comments_after_colon_no_comma(json_handler, tmp_path):
+    """
+    Test handling inline comments when previous line ends with colon.
+    This covers line 94 in json_handler.py.
+    """
+    file_path = tmp_path / "colon_comment.json"
+    content = """{
+    "parent":
+        "value" // comment without comma
+}"""
+    file_path.write_text(content, encoding="utf-8")
+
+    data = json_handler.load(file_path)
+    assert "parent" in data
+    assert data["parent"] == "value"
