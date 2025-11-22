@@ -1,6 +1,21 @@
-# UpLang
-
-一个用于更新 Minecraft Java Edition 整合包语言文件的命令行工具。
+<div align="center">
+  <img src="https://cdn.sa.net/2025/11/22/yctQgkBpA1YHGKo.png" alt="logo" width="150" height="auto" />
+  <h1>UpLang</h1>
+  <p>
+    更新 MC Java 整合包语言文件的命令行工具
+  </p>
+  <p>
+    <img src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FQianFuv%2FUpLang%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&style=plastic&color=blue" alt="Python Version" />
+    <img src="https://img.shields.io/codecov/c/github/QianFuv/uplang?style=plastic&color=blue" alt="Coverage" />
+    <img src="https://img.shields.io/github/commit-activity/m/QianFuv/UpLang?style=plastic&color=blue" alt="Stars" />
+    <br>
+    <img src="https://img.shields.io/pypi/dm/uplang?style=plastic&color=blue" alt="Pypi downloads" />
+    <img src="https://img.shields.io/pypi/v/uplang?style=plastic&color=blue" alt="Pypi version" />
+    <img src="https://img.shields.io/github/repo-size/QianFuv/UpLang?style=plastic&color=blue" alt="Repo Size" />
+    <img src="https://img.shields.io/github/stars/QianFuv/UpLang?style=plastic&color=blue" alt="Stars" />
+    <img src="https://img.shields.io/github/license/QianFuv/uplang?style=plastic&color=blue" alt="License" />
+  </p>
+</div>
 
 ## 1. 安装
 
