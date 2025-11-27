@@ -196,13 +196,14 @@ class JSONHandler:
         Save JSON file preserving order and format.
         Uses ensure_ascii=False to keep Unicode (Chinese, §) as UTF-8,
         but escapes PUA characters to match JAR format.
+        Uses system default line endings for Git compatibility.
         """
         try:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             json_str = json.dumps(data, ensure_ascii=False, indent=2)
             json_str = _escape_pua_in_json_string(json_str)
             with open(
-                file_path, "w", encoding="utf-8", newline="\n", errors="surrogatepass"
+                file_path, "w", encoding="utf-8", errors="surrogatepass"
             ) as f:
                 f.write(json_str)
                 f.write("\n")

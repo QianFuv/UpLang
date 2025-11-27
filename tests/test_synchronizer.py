@@ -201,7 +201,7 @@ def test_synchronize_chinese_preserves_existing(synchronizer, mod_en, mod_zh):
 
 def test_synchronize_chinese_updates_modified_keys(synchronizer, mod_en, mod_zh):
     """
-    Test that Chinese sync updates modified keys.
+    Test that Chinese sync updates modified keys when Chinese also changed.
     """
     rp_en = LanguageFile(
         mod_id="testmod",
@@ -215,7 +215,7 @@ def test_synchronize_chinese_updates_modified_keys(synchronizer, mod_en, mod_zh)
         content={"key1": "旧翻译"},
         content_hash="hash789",
     )
-    diff = DiffResult(modified={"key1"})
+    diff = DiffResult(modified={"key1"}, zh_modified={"key1"})
 
     result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
@@ -282,7 +282,11 @@ def test_synchronize_chinese_mixed_changes(synchronizer, mod_en, mod_zh):
         content_hash="hash789",
     )
     diff = DiffResult(
-        added={"key3"}, modified={"key2"}, deleted={"old_key"}, unchanged={"key1"}
+        added={"key3"},
+        modified={"key2"},
+        deleted={"old_key"},
+        unchanged={"key1"},
+        zh_modified={"key2"},
     )
 
     result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
@@ -321,7 +325,7 @@ def test_synchronize_chinese_changed_key_missing_in_mod_zh(synchronizer):
         content={"key1": "旧值1", "key2": "旧值2"},
         content_hash="hash3",
     )
-    diff = DiffResult(modified={"key1", "key2"})
+    diff = DiffResult(modified={"key1", "key2"}, zh_modified={"key2"})
 
     result_file = synchronizer.synchronize_chinese(mod_en, mod_zh, rp_en, rp_zh, diff)
 
@@ -666,3 +670,104 @@ def test_synchronize_chinese_no_rp_en_with_missing_keys(synchronizer):
     assert result_file.content["key1"] == "资源包翻译1"
     assert result_file.content["key2"] == "模组值2"
     assert result_file.content["key3"] == "模组值3"
+
+
+def test_detect_chinese_changes(synchronizer):
+    """
+    Test detect_chinese_changes method.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "新值1", "key2": "值2", "key3": "值3"},
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "旧值1", "key2": "值2"},
+    )
+
+    zh_modified = synchronizer.detect_chinese_changes(mod_zh, rp_zh)
+
+    assert "key1" in zh_modified
+    assert "key2" not in zh_modified
+
+
+def test_detect_chinese_changes_none_params(synchronizer):
+    """
+    Test detect_chinese_changes with None parameters.
+    """
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "值1"},
+    )
+
+    result1 = synchronizer.detect_chinese_changes(None, mod_zh)
+    assert result1 == set()
+
+    result2 = synchronizer.detect_chinese_changes(mod_zh, None)
+    assert result2 == set()
+
+
+def test_synchronize_chinese_force_english_no_mod_zh(synchronizer):
+    """
+    Test Chinese sync with force_english_on_change but no mod Chinese file.
+    """
+    mod_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "new_value1", "key2": "value2"},
+    )
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "old_value1", "key2": "value2"},
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "旧翻译1", "key2": "翻译2"},
+    )
+    diff = DiffResult(modified={"key1"}, zh_modified=set())
+
+    result_file = synchronizer.synchronize_chinese(
+        mod_en, None, rp_en, rp_zh, diff, force_english_on_change=True
+    )
+
+    assert result_file.content["key1"] == "new_value1"
+    assert result_file.content["key2"] == "翻译2"
+
+
+def test_synchronize_chinese_preserve_existing_when_unchanged(synchronizer):
+    """
+    Test Chinese sync preserves existing translation when English changed but Chinese didn't.
+    """
+    mod_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "new_value1", "key2": "value2"},
+    )
+    mod_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "翻译1", "key2": "翻译2"},
+    )
+    rp_en = LanguageFile(
+        mod_id="testmod",
+        lang_code="en_us",
+        content={"key1": "old_value1", "key2": "value2"},
+    )
+    rp_zh = LanguageFile(
+        mod_id="testmod",
+        lang_code="zh_cn",
+        content={"key1": "现有翻译1", "key2": "翻译2"},
+    )
+    diff = DiffResult(modified={"key1"}, zh_modified=set())
+
+    result_file = synchronizer.synchronize_chinese(
+        mod_en, mod_zh, rp_en, rp_zh, diff, force_english_on_change=False
+    )
+
+    assert result_file.content["key1"] == "现有翻译1"
+    assert result_file.content["key2"] == "翻译2"

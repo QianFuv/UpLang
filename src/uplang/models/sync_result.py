@@ -15,6 +15,7 @@ class DiffResult:
     modified: set[str] = field(default_factory=set)
     deleted: set[str] = field(default_factory=set)
     unchanged: set[str] = field(default_factory=set)
+    zh_modified: set[str] = field(default_factory=set)
 
     @property
     def has_changes(self) -> bool:

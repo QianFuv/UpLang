@@ -47,6 +47,22 @@ class LanguageSynchronizer:
             diff,
         )
 
+    def detect_chinese_changes(
+        self,
+        mod_zh: LanguageFile | None,
+        rp_zh: LanguageFile | None,
+    ) -> set[str]:
+        """
+        Detect which keys have changed Chinese translations.
+        """
+        if mod_zh is None or rp_zh is None:
+            return set()
+
+        common_keys = set(mod_zh.content.keys()) & set(rp_zh.content.keys())
+        zh_modified = {k for k in common_keys if mod_zh.content[k] != rp_zh.content[k]}
+
+        return zh_modified
+
     def synchronize_chinese(
         self,
         mod_en: LanguageFile,
@@ -54,6 +70,7 @@ class LanguageSynchronizer:
         rp_en: LanguageFile | None,
         rp_zh: LanguageFile | None,
         diff: DiffResult,
+        force_english_on_change: bool = False,
     ) -> LanguageFile:
         """
         Synchronize Chinese language file.
@@ -76,10 +93,23 @@ class LanguageSynchronizer:
 
             for key in mod_en.content:
                 if key in changed_keys:
-                    if mod_zh and key in mod_zh.content:
-                        result_content[key] = mod_zh.content[key]
+                    if force_english_on_change or key in diff.zh_modified:
+                        if mod_zh and key in mod_zh.content:
+                            result_content[key] = mod_zh.content[key]
+                        else:
+                            result_content[key] = mod_en.content[key]
+                    elif (
+                        key in diff.modified
+                        and key in rp_zh_content
+                        and mod_zh
+                        and key in mod_zh.content
+                    ):
+                        result_content[key] = rp_zh_content[key]
                     else:
-                        result_content[key] = mod_en.content[key]
+                        if mod_zh and key in mod_zh.content:
+                            result_content[key] = mod_zh.content[key]
+                        else:
+                            result_content[key] = mod_en.content[key]
                 elif key in rp_zh_content:
                     result_content[key] = rp_zh_content[key]
                 else:
