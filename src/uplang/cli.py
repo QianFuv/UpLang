@@ -75,12 +75,18 @@ def main(
 @click.option("--dry-run", is_flag=True, help="Simulate without modifying files")
 @click.option("--force", is_flag=True, help="Ignore cache, process all mods")
 @click.option("--parallel", "-p", default=4, help="Number of parallel workers")
+@click.option(
+    "--force-english-on-change",
+    is_flag=True,
+    help="Sync new English when Chinese unchanged",
+)
 def sync(
     mods_dir: str,
     resourcepack_dir: str,
     dry_run: bool,
     force: bool,
     parallel: int,
+    force_english_on_change: bool,
 ):
     """
     Synchronize language files from mods to resource pack.
@@ -112,7 +118,13 @@ def sync(
         with ThreadPoolExecutor(max_workers=parallel) as executor:
             futures = {
                 executor.submit(
-                    _sync_single_mod, mod, rp_path, cache, dry_run, force
+                    _sync_single_mod,
+                    mod,
+                    rp_path,
+                    cache,
+                    dry_run,
+                    force,
+                    force_english_on_change,
                 ): mod
                 for mod in mods
             }
@@ -287,6 +299,55 @@ def diff(mod_jar: str, resourcepack_dir: str):
 
     except UpLangError as e:
         print_error(f"Error: {e}")
+        sys.exit(1)
+
+
+@main.command(name="import")
+@click.argument("zip_file", type=click.Path(exists=True, dir_okay=False, path_type=str))
+@click.argument(
+    "resourcepack_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=str),
+)
+@click.option("--dry-run", is_flag=True, help="Preview changes without modifying files")
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite existing translations (default: only import untranslated)",
+)
+def import_translations(
+    zip_file: str, resourcepack_dir: str, dry_run: bool, overwrite: bool
+):
+    """
+    Import translations from a resource pack zip file.
+    """
+    zip_path = Path(zip_file)
+    rp_path = Path(resourcepack_dir)
+
+    print_info(f"Importing translations from {zip_path.name}")
+    print_info(f"Target resource pack: {rp_path}")
+
+    if dry_run:
+        print_warning("DRY RUN MODE - No files will be modified")
+
+    try:
+        from uplang.core.importer import TranslationImporter
+
+        importer = TranslationImporter()
+        result = importer.import_from_zip(
+            zip_path, rp_path, dry_run=dry_run, overwrite=overwrite
+        )
+
+        print_info(f"\nProcessed {result.total_mods} mod(s)")
+        print_success(f"Keys imported: {result.keys_imported}")
+        print_info(f"Keys skipped (already translated): {result.keys_skipped}")
+
+        if result.errors:
+            print_warning(f"\nErrors encountered: {len(result.errors)}")
+            for error in result.errors:
+                print_error(f"  {error}")
+
+    except Exception as e:
+        print_error(f"Import failed: {e}")
         sys.exit(1)
 
 
@@ -650,7 +711,7 @@ def web(resourcepack_dir: str, host: str, port: int, open_browser: bool):
         sys.exit(1)
 
 
-def _sync_single_mod(mod, rp_path, cache, dry_run, force):
+def _sync_single_mod(mod, rp_path, cache, dry_run, force, force_english_on_change):
     """
     Synchronize a single mod's language files.
     """
@@ -675,8 +736,17 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force):
             rp_zh = extractor.load_from_resource_pack(rp_path, mod.mod_id, "zh_cn")
 
             synced_en, diff = synchronizer.synchronize_english(mod_en, rp_en)
+
+            zh_modified = set()
+            if mod_zh and rp_zh:
+                for key in diff.modified:
+                    if key in mod_zh.content and key in rp_zh.content:
+                        if mod_zh.content[key] != rp_zh.content[key]:
+                            zh_modified.add(key)
+            diff.zh_modified = zh_modified
+
             synced_zh = synchronizer.synchronize_chinese(
-                synced_en, mod_zh, rp_en, rp_zh, diff
+                synced_en, mod_zh, rp_en, rp_zh, diff, force_english_on_change
             )
 
             zh_added_keys = 0
