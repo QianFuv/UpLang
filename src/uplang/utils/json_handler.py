@@ -73,6 +73,34 @@ class JSONHandler:
                 result.append(" ")
         return "".join(result)
 
+    def _find_comment_position(self, line: str) -> int:
+        """
+        Find the position of // comment start, ignoring // inside quoted strings.
+        Returns -1 if no comment found.
+        """
+        in_string = False
+        escape_next = False
+
+        for i in range(len(line) - 1):
+            if escape_next:
+                escape_next = False
+                continue
+
+            char = line[i]
+
+            if char == '\\' and in_string:
+                escape_next = True
+                continue
+
+            if char == '"':
+                in_string = not in_string
+                continue
+
+            if not in_string and line[i:i+2] == '//':
+                return i
+
+        return -1
+
     def _strip_comments(self, text: str) -> str:
         """
         Remove single-line and multi-line comments from JSON text.
@@ -86,7 +114,7 @@ class JSONHandler:
             stripped = line.strip()
             if stripped.startswith("//"):
                 continue
-            comment_pos = line.find("//")
+            comment_pos = self._find_comment_position(line)
             if comment_pos > 0:
                 before_comment = line[:comment_pos].rstrip()
                 if before_comment and not before_comment.endswith(","):

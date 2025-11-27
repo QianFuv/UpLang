@@ -22,6 +22,7 @@ class ImportResult:
     total_mods: int = 0
     keys_imported: int = 0
     keys_skipped: int = 0
+    keys_unchanged: int = 0
     errors: list[str] = field(default_factory=list)
 
 
@@ -132,10 +133,18 @@ class TranslationImporter:
         if rp_zh:
             merged_zh_content = dict(rp_zh.content)
 
+        keys_changed = 0
         for key in keys_to_import:
             if key in zip_zh_content:
-                merged_zh_content[key] = zip_zh_content[key]
-                result.keys_imported += 1
+                old_value = merged_zh_content.get(key)
+                new_value = zip_zh_content[key]
+                merged_zh_content[key] = new_value
+
+                if old_value == new_value:
+                    result.keys_unchanged += 1
+                else:
+                    keys_changed += 1
+                    result.keys_imported += 1
 
         if rp_en:
             from uplang.core.synchronizer import LanguageSynchronizer
@@ -146,16 +155,22 @@ class TranslationImporter:
             )
 
         if not dry_run:
-            merged_zh = LanguageFile(
-                mod_id=mod_id,
-                lang_code="zh_cn",
-                content=merged_zh_content,
-                content_hash=calculate_dict_hash(merged_zh_content),
-            )
-            self.extractor.save_to_resource_pack(resourcepack_dir, merged_zh)
-            print_success(f"{mod_id}: Imported {len(keys_to_import)} keys")
+            if keys_changed > 0:
+                merged_zh = LanguageFile(
+                    mod_id=mod_id,
+                    lang_code="zh_cn",
+                    content=merged_zh_content,
+                    content_hash=calculate_dict_hash(merged_zh_content),
+                )
+                self.extractor.save_to_resource_pack(resourcepack_dir, merged_zh)
+                print_success(f"{mod_id}: Imported {keys_changed} keys")
+            else:
+                print_verbose(f"{mod_id}: All {len(keys_to_import)} keys already have correct values")
         else:
-            print_info(f"{mod_id}: Would import {len(keys_to_import)} keys")
+            if keys_changed > 0:
+                print_info(f"{mod_id}: Would import {keys_changed} keys")
+            else:
+                print_verbose(f"{mod_id}: All {len(keys_to_import)} keys already have correct values")
 
     def _identify_keys_to_import(
         self,

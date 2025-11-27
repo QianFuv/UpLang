@@ -339,6 +339,8 @@ def import_translations(
 
         print_info(f"\nProcessed {result.total_mods} mod(s)")
         print_success(f"Keys imported: {result.keys_imported}")
+        if result.keys_unchanged > 0:
+            print_info(f"Keys unchanged (already correct): {result.keys_unchanged}")
         print_info(f"Keys skipped (already translated): {result.keys_skipped}")
 
         if result.errors:
