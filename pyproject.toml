@@ -1,7 +1,7 @@
 [project]
 name = "uplang"
-version = "1.0.0"
-description = "A command-line tool to streamline the process of updating language files for Minecraft Java Edition modpacks."
+version = "1.1.0"
+description = "更新 MC Java 整合包语言文件的命令行工具"
 readme = "README.md"
 authors = [
     { name = "QianFuv", email = "qianfuv@qq.com" }
