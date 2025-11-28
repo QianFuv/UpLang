@@ -742,9 +742,12 @@ def _sync_single_mod(mod, rp_path, cache, dry_run, force, force_english_on_chang
             zh_modified = set()
             if mod_zh and rp_zh:
                 for key in diff.modified:
-                    if key in mod_zh.content and key in rp_zh.content:
-                        if mod_zh.content[key] != rp_zh.content[key]:
-                            zh_modified.add(key)
+                    if (
+                        key in mod_zh.content
+                        and key in rp_zh.content
+                        and mod_zh.content[key] != rp_zh.content[key]
+                    ):
+                        zh_modified.add(key)
             diff.zh_modified = zh_modified
 
             synced_zh = synchronizer.synchronize_chinese(

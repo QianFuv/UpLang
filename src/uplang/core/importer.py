@@ -165,12 +165,18 @@ class TranslationImporter:
                 self.extractor.save_to_resource_pack(resourcepack_dir, merged_zh)
                 print_success(f"{mod_id}: Imported {keys_changed} keys")
             else:
-                print_verbose(f"{mod_id}: All {len(keys_to_import)} keys already have correct values")
+                print_verbose(
+                    f"{mod_id}: All {len(keys_to_import)} keys already "
+                    "have correct values"
+                )
         else:
             if keys_changed > 0:
                 print_info(f"{mod_id}: Would import {keys_changed} keys")
             else:
-                print_verbose(f"{mod_id}: All {len(keys_to_import)} keys already have correct values")
+                print_verbose(
+                    f"{mod_id}: All {len(keys_to_import)} keys already "
+                    "have correct values"
+                )
 
     def _identify_keys_to_import(
         self,
@@ -191,8 +197,11 @@ class TranslationImporter:
         keys_to_import = set()
 
         for key in zip_zh_content:
-            if key in rp_en.content and key in rp_zh.content:
-                if rp_zh.content[key] == rp_en.content[key]:
-                    keys_to_import.add(key)
+            if (
+                key in rp_en.content
+                and key in rp_zh.content
+                and rp_zh.content[key] == rp_en.content[key]
+            ):
+                keys_to_import.add(key)
 
         return keys_to_import

@@ -88,7 +88,7 @@ class JSONHandler:
 
             char = line[i]
 
-            if char == '\\' and in_string:
+            if char == "\\" and in_string:
                 escape_next = True
                 continue
 
@@ -96,7 +96,7 @@ class JSONHandler:
                 in_string = not in_string
                 continue
 
-            if not in_string and line[i:i+2] == '//':
+            if not in_string and line[i : i + 2] == "//":
                 return i
 
         return -1
@@ -230,9 +230,7 @@ class JSONHandler:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             json_str = json.dumps(data, ensure_ascii=False, indent=2)
             json_str = _escape_pua_in_json_string(json_str)
-            with open(
-                file_path, "w", encoding="utf-8", errors="surrogatepass"
-            ) as f:
+            with open(file_path, "w", encoding="utf-8", errors="surrogatepass") as f:
                 f.write(json_str)
                 f.write("\n")
         except Exception as e:
