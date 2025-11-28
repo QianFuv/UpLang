@@ -1,4 +1,7 @@
 __pycache__
 /.claude
-/.coverage
 /CLAUDE.md
+/*_cache
+/.venv
+/dist
+/.coverage
