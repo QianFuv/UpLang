@@ -2,34 +2,99 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   id-token: write
+  contents: write
 
 jobs:
+  check-release:
+    name: Check for release commit
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.check.outputs.is_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit message
+        id: check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Commit message: $COMMIT_MSG"
+
+          if echo "$COMMIT_MSG" | grep -qE "🔖 \(repo\): 发布 [0-9]+\.[0-9]+\.[0-9]+ 版本"; then
+            VERSION=$(echo "$COMMIT_MSG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Detected release version: $VERSION"
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+            echo "Not a release commit"
+          fi
+
   build-and-publish:
     name: Build and publish
+    needs: check-release
+    if: needs.check-release.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     environment: pypi
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "UV_HOME=~/.uv" >> $GITHUB_ENV
-          echo "$UV_HOME/bin" >> $GITHUB_PATH
-        shell: bash
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync
 
       - name: Build package
         run: uv build
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.check-release.outputs.version }}"
+          PREV_TAG=$(git tag -l --sort=-version:refname | grep -v "^${VERSION}$" | head -n 1)
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found, using all commits"
+            CHANGELOG=$(git log --pretty=format:"%h %s" --reverse)
+          else
+            echo "Generating changelog from $PREV_TAG to HEAD"
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"%h %s" --reverse)
+          fi
+
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.check-release.outputs.version }}
+          name: Release ${{ needs.check-release.outputs.version }}
+          body: |
+            ## What's Changed
+
+            ```
+            ${{ steps.changelog.outputs.changelog }}
+            ```
+          draft: false
+          prerelease: false
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
