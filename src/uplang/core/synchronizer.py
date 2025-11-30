@@ -93,23 +93,22 @@ class LanguageSynchronizer:
 
             for key in mod_en.content:
                 if key in changed_keys:
-                    if force_english_on_change or key in diff.zh_modified:
+                    if key in diff.zh_modified:
                         if mod_zh and key in mod_zh.content:
                             result_content[key] = mod_zh.content[key]
                         else:
                             result_content[key] = mod_en.content[key]
-                    elif (
-                        key in diff.modified
-                        and key in rp_zh_content
-                        and mod_zh
-                        and key in mod_zh.content
-                    ):
-                        result_content[key] = rp_zh_content[key]
                     else:
-                        if mod_zh and key in mod_zh.content:
-                            result_content[key] = mod_zh.content[key]
-                        else:
+                        if force_english_on_change:
                             result_content[key] = mod_en.content[key]
+                        else:
+                            if mod_zh and key in mod_zh.content:
+                                if key in rp_zh_content:
+                                    result_content[key] = rp_zh_content[key]
+                                else:
+                                    result_content[key] = mod_zh.content[key]
+                            else:
+                                result_content[key] = mod_en.content[key]
                 elif key in rp_zh_content:
                     result_content[key] = rp_zh_content[key]
                 else:
