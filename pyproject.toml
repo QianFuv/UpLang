@@ -1,46 +1,19 @@
 [project]
 name = "uplang"
-version = "1.1.1"
-description = "更新 MC Java 整合包语言文件的命令行工具"
+version = "1.1.2"
+description = "Command-line tool for updating MC Java modpack language files"
 readme = "README.md"
 authors = [
     { name = "QianFuv", email = "qianfuv@qq.com" }
 ]
 license = { file = "LICENSE" }
-requires-python = ">=3.13"
-dependencies = [
-    "click>=8.1.0",
-    "colorama>=0.4.6",
-    "ruamel.yaml>=0.18.0",
-    "fastapi>=0.121.3",
-    "uvicorn[standard]>=0.38.0",
-]
-
-[project.scripts]
-uplang = "uplang.cli:main"
-
-[project.urls]
-Repository = "https://github.com/QianFuv/UpLang"
+requires-python = ">=3.12, <3.13"
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
-    "pytest-cov>=4.0.0",
     "mypy>=1.18.2",
-    "ruff>=0.14.6",
-    "types-colorama>=0.4.15",
-    "httpx>=0.27.0"
-]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_functions = ["test_*"]
-
-[tool.coverage.run]
-omit = [
-    "src/uplang/cli.py",
-    "src/uplang/__main__.py",
+    "ruff>=0.14.6"
 ]
 
 [build-system]
@@ -49,3 +22,6 @@ build-backend = "uv_build"
 
 [tool.ruff.lint]
 select = ["E","F","UP","B","SIM","I"]
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]

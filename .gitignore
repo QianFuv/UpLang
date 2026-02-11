@@ -1,7 +1,4 @@
-__pycache__
-/.claude
-/CLAUDE.md
-/*_cache
 /.venv
-/dist
-/.coverage
+/AGENTS.md
+/*_cache
+__pycache__
