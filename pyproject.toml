@@ -10,9 +10,11 @@ license = { file = "LICENSE" }
 requires-python = ">=3.12, <3.13"
 dependencies = [
     "click>=8.3.1",
-    "msgspec>=0.20.0",
-    "ripgrepy>=2.2.0",
+    "orjson>=3.11.7",
 ]
+
+[project.scripts]
+uplang = "uplang.cli:main"
 
 [project.optional-dependencies]
 dev = [
