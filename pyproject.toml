@@ -1,6 +1,6 @@
 [project]
 name = "uplang"
-version = "2.0.0"
+version = "2.0.1"
 description = "Command-line tool for updating MC Java modpack language files"
 readme = "README.md"
 authors = [{ name = "QianFuv", email = "qianfuv@qq.com" }]
