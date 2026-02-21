@@ -1,5 +1,5 @@
 /.venv
-/tests_local
+/test*
 /AGENTS.md
 /*_cache
 __pycache__
